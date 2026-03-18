@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FAQ — bch.ee Parasite Pool | Bitcoin Cash Mining Pool</title>
+  <meta name="description" content="Frequently asked questions about bch.ee Parasite Pool — how payouts work, fees, hardware, Full Round Payouts, and how to connect your miner." />
+  <meta property="og:title" content="FAQ — bch.ee Parasite Pool" />
+  <meta property="og:description" content="Everything you need to know about bch.ee Parasite Pool — payouts, fees, hardware support, and how to get started mining Bitcoin Cash." />
+  <meta property="og:image" content="https://bch.ee/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:url" content="https://bch.ee/faq.html" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="bch.ee Parasite Pool" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="FAQ — bch.ee Parasite Pool" />
+  <meta name="twitter:description" content="Frequently asked questions about bch.ee Parasite Pool — how payouts work, fees, hardware, Full Round Payouts, and how to connect your miner." />
+  <meta name="twitter:image" content="https://bch.ee/og-image.png" />
+  <link rel="canonical" href="https://bch.ee/faq.html" />
+  <link rel="icon" type="image/x-icon" href="favicon.ico" />
+  <link rel="icon" type="image/svg+xml" href="logo.svg" />
+  <link rel="apple-touch-icon" href="parasite-logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500;700&family=Ubuntu+Mono&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <header class="header">
+    <div class="container header-inner">
+      <a href="/" class="logo">
+        <img src="logo.svg" alt="bch.ee Parasite Pool" class="logo-icon" />
+        <span class="logo-text">bch.ee <span class="accent">Parasite</span> Pool</span>
+      </a>
+      <nav class="nav">
+        <a href="/" class="nav-btn">Home</a>
+        <a href="/#connect" class="nav-btn">Connect</a>
+        <a href="/#mystats" class="nav-btn">My Stats</a>
+        <a href="/#blocks" class="nav-btn">Blocks</a>
+        <a href="/faq.html" class="nav-btn active">FAQ</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <div class="hero">
+      <h1>Frequently Asked <span class="accent">Questions</span></h1>
+      <p class="hero-sub">Everything you need to know about bch.ee Parasite Pool.</p>
+    </div>
+
+    <div class="faq-list">
+
+      <details class="faq-item" open>
+        <summary>What is bch.ee Parasite Pool?</summary>
+        <p>bch.ee Parasite Pool is a Bitcoin Cash (BCH) mining pool inspired by the original <a href="https://parasite.space" target="_blank" rel="noopener">parasite.space</a> BTC pool. It combines a 1 BCH block finder bonus with proportional Full Round Payouts for all miners. It is run by the developer of <a href="https://solochance.org" target="_blank" rel="noopener">SoloChance.org</a> and is currently in beta.</p>
+      </details>
+
+      <details class="faq-item">
+        <summary>What makes this pool different from a regular BCH pool?</summary>
+        <p>Most mining pools fall into one of two camps: <strong>solo pools</strong>, where you chase the full block reward alone with no guarantees, or <strong>proportional pools</strong>, where rewards are shared steadily but there is nothing to get excited about.</p>
+        <p>bch.ee Parasite Pool gives you both. Every miner receives their fair proportional share of each block — no luck penalty, no dry spells. And on top of that, whoever finds the block walks away with an extra <strong>1 BCH bonus</strong> paid directly to them. The thrill of winning big, with the stability of regular payouts.</p>
+      </details>
+
+      <details class="faq-item">
+        <summary>How do payouts work?</summary>
+        <p>Every time a block is found, three things happen:</p>
+        <ol class="faq-ol">
+          <li><strong>1 BCH</strong> is paid to the miner who found the block.</li>
+          <li><strong>99% of (Block Reward + Tx Fees − 1 BCH)</strong> is split proportionally among all miners based on their shares submitted since the last block.</li>
+          <li><strong>1%</strong> goes to the pool fee (covers pool operator + dev donations).</li>
+        </ol>
+        <p>The block finder receives both the 1 BCH bonus and their proportional share of the remaining 99%.</p>
+      </details>
+
+      <details class="faq-item">
+        <summary>What is Full Round Payouts?</summary>
+        <p>Full Round means every share you submit between two blocks counts toward your payout — there is no artificial time window that excludes older shares from earlier in the round. One block found starts a new round; the next block found closes it. All shares within that round are counted equally and proportionally.</p>
+      </details>
+
+      <details class="faq-item">
+        <summary>What is the pool fee?</summary>
+        <p>The effective fee is approximately <strong>~0.7%</strong> of the full block reward. The 1 BCH finder bonus is paid completely fee-free. The 1% fee applies only to the remaining distributable reward — so on a 3.125 BCH block, the fee is taken from 2.125 BCH, not the full amount.</p>
+        <p>The fee is split as follows:</p>
+        <ul class="faq-ul">
+          <li>bch.ee Parasite Pool — 0.98%</li>
+          <li>asicseer-pool dev (Calin) — 0.01%</li>
+          <li>BCHN donation — 0.01%</li>
+        </ul>
+      </details>
+
+      <details class="faq-item">
+        <summary>How do I connect my miner?</summary>
+        <p>Point your miner at <code>para.bch.ee:3333</code>. Use your BCH address as the username, optionally followed by a worker name: <code>YOUR_BCH_ADDRESS.workername</code>. Password is <code>x</code>. See the <a href="/#connect">Connect page</a> for full examples including Bitaxe.</p>
+      </details>
+
+      <details class="faq-item">
+        <summary>What mining hardware is supported?</summary>
+        <p>Any SHA-256 mining hardware works — ASICs (Antminer, Whatsminer, Bitaxe, nerdQAxe, etc.) and CPU miners (cpuminer-opt). BCH uses the same SHA-256 algorithm as Bitcoin.</p>
+      </details>
+
+      <details class="faq-item">
+        <summary>When will I receive my payout?</summary>
+        <p>Payouts are sent when a block is found. The 1 BCH finder bonus is paid after 100 confirmations (~16.5 hours). Your proportional share is paid from the same block. Since the pool is in beta and has not yet found a block, there are no payouts yet.</p>
+      </details>
+
+      <details class="faq-item">
+        <summary>How do I track my stats?</summary>
+        <p>Go to the <a href="/#mystats">My Stats</a> page and enter your BCH address. It will show your hashrate, shares, and last activity. Stats are only available once the pool node finishes syncing.</p>
+      </details>
+
+      <details class="faq-item">
+        <summary>Is this pool safe to use?</summary>
+        <p>The pool is in beta. It is built on <a href="https://github.com/kanon1989/asicseer-pool" target="_blank" rel="noopener">asicseer-pool</a>, a fork of ckpool — established, open-source pool software. bch.ee Parasite Pool cannot be held responsible for losses, missed payouts, or service interruptions, but we are committed to acting in good faith and resolving any issues that arise.</p>
+      </details>
+
+      <details class="faq-item">
+        <summary>Why Bitcoin Cash and not Bitcoin?</summary>
+        <p>From the beginning of <a href="https://solochance.org" target="_blank" rel="noopener">SoloChance.org</a>, the goal has always been to serve what is underserved — to find the gap the community hasn't filled yet. When SoloChance.org was being built, <a href="https://solochance.com" target="_blank" rel="noopener">SoloChance.com</a> had already been serving Bitcoin solo mining calculations for years. So the gap was Bitcoin Cash, and that's where SoloChance.org went.</p>
+        <p>The same thinking applies here. Bitcoin Cash has regular pools, solo pools — everything you'd expect. The one thing it didn't have was a Parasite pool — something Bitcoin already had with <a href="https://parasite.space" target="_blank" rel="noopener">parasite.space</a>. The model is genuinely exciting, the gap was there, and no one had filled it yet. bch.ee Parasite Pool exists to change that.</p>
+      </details>
+
+      <details class="faq-item">
+        <summary>Where is bch.ee Parasite Pool located?</summary>
+        <p>The pool server runs in Frankfurt, Germany. Invoicing and domain purchases are handled through Estonia, thanks to the <a href="https://e-resident.gov.ee" target="_blank" rel="noopener">Estonian e-Residency</a> programme, which allows individuals to access EU digital services without being a resident. The operator lives somewhere else.</p>
+      </details>
+
+      <details class="faq-item">
+        <summary>What software is bch.ee Parasite Pool built on?</summary>
+        <p>It is built on <a href="https://github.com/cculianu/asicseer-pool" target="_blank" rel="noopener">asicseer-pool</a>, with the necessary modifications made for our setup. Asicseer-pool itself is based on the industry-standard <a href="https://bitbucket.org/ckolivas/ckpool/src/master/" target="_blank" rel="noopener">ckpool</a> by Con Kolivas.</p>
+        <p>While on the subject — a sincere thank you to <a href="https://x.com/ckpooldev" target="_blank" rel="noopener">Con Kolivas</a>, the Prometheus of the solo mining space. None of this would exist without his foundational work.</p>
+      </details>
+
+      <details class="faq-item">
+        <summary>Are you part of the OSMU community?</summary>
+        <p><a href="https://osmu.wiki" target="_blank" rel="noopener">OSMU</a> (Open Source Miners United) is a community of people passionate about Bitcoin and open-source mining, built around the belief that knowledge should be shared openly. I was an active member in the early days — it shaped a lot of how I think about mining. Life got busy; learning a new language, preparing to migrate for a better life kept my calendar full, and I gradually became more of a read-only member. But the spirit of that community is very much part of why bch.ee Parasite Pool exists.</p>
+        <p>Honestly, one of the things I feel most held back by is something I had no say in — the passport I was born with. I didn't choose my country any more than anyone chooses where they're born. But the consequences are real: no visa to the US, no free movement in the Schengen area, no Bitcoin conferences in Europe or the UK. If I had been born a US, UK, or German citizen, I have no doubt things would have looked very different — I would have shown up, contributed in person, and been far more active. Until I naturalise somewhere that opens those doors, staying on the sidelines is simply the reality.</p>
+        <p>To make matters more absurd — even importing a $10 Bitaxe accessory is either outright forbidden or burdened with such substantial import taxes and fees that it becomes economically pointless. The hardware that the rest of the world tinkers with freely is effectively out of reach. Until my circumstances change, I'll be channelling my energy into my own products for fun, and my career to survive — and staying out of it.</p>
+        <p>Long story short, I really would like to be an active member, but until then I will be a read-only member and a silent fan.</p>
+        <p>I especially want to thank <a href="https://x.com/skot9000" target="_blank" rel="noopener">@skot9000</a>, <a href="https://x.com/wantclue" target="_blank" rel="noopener">@wantclue</a>, <a href="https://www.rgzen.com/index.php" target="_blank" rel="noopener">RGZ Electronics</a>, and <a href="https://www.thesolomining.co/" target="_blank" rel="noopener">The Solo Mining Co.</a> for their kind early help to me and everything they created in this space.</p>
+      </details>
+
+      <details class="faq-item">
+        <summary>Where can I get help or follow updates?</summary>
+        <p>Join our Telegram group: <a href="https://t.me/parabchee" target="_blank" rel="noopener">t.me/parabchee</a></p>
+      </details>
+
+    </div>
+
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-inner">
+      <span>bch.ee Parasite Pool &mdash; <span class="accent">para.bch.ee:3333</span></span>
+      <a href="https://t.me/parabchee" target="_blank" rel="noopener" class="tg-footer-link">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.248-1.97 9.289c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.17 14.498l-2.95-.924c-.64-.204-.657-.64.136-.948l11.57-4.461c.537-.194 1.006.131.836.083z"/></svg>
+        t.me/parabchee
+      </a>
+<span class="muted">
+        <a href="/terms.html" style="color:var(--muted);text-decoration:none;transition:color .2s" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--muted)'">Terms</a>
+        &nbsp;·&nbsp;
+        <a href="/privacy.html" style="color:var(--muted);text-decoration:none;transition:color .2s" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--muted)'">Privacy</a>
+      </span>
+    </div>
+  </footer>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "@id": "https://bch.ee/faq.html#faqpage",
+    "url": "https://bch.ee/faq.html",
+    "name": "FAQ — bch.ee Parasite Pool",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What is bch.ee Parasite Pool?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "bch.ee Parasite Pool is a Bitcoin Cash (BCH) mining pool that combines a 1 BCH block finder bonus with proportional Full Round Payouts for all miners. It is run by the developer of SoloChance.org and is currently in beta."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What makes this pool different from a regular BCH pool?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "bch.ee Parasite Pool gives you both solo and proportional rewards. Every miner receives their fair proportional share of each block, and whoever finds the block walks away with an extra 1 BCH bonus. The thrill of winning big, with the stability of regular payouts."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How do payouts work?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Every time a block is found: 1 BCH is paid to the miner who found the block; 99% of (Block Reward + Tx Fees − 1 BCH) is split proportionally among all miners by shares; ~0.7% goes to the pool fee (effective, since the 1 BCH finder bonus is fee-free). The block finder receives both the 1 BCH bonus and their proportional share."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What is Full Round Payouts?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Full Round means every share submitted between two blocks counts toward your payout — there is no artificial time window that excludes older shares. One block starts a new round; the next block closes it."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What is the pool fee?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "The effective fee is approximately ~0.7% of the full block reward. The 1 BCH finder bonus is paid fee-free. The 1% fee applies only to the remaining distributable reward — on a 3.125 BCH block, the fee is taken from 2.125 BCH. Split: bch.ee Parasite Pool 0.98%, asicseer-pool developer 0.01%, BCHN donation 0.01%."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How do I connect my miner?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Point your miner at para.bch.ee:3333. Use your BCH address as the username, optionally followed by a worker name (YOUR_BCH_ADDRESS.workername). Password is x."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What mining hardware is supported?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Any SHA-256 mining hardware works — ASICs (Antminer, Whatsminer, Bitaxe, nerdQAxe, etc.) and CPU miners (cpuminer-opt). BCH uses the same SHA-256 algorithm as Bitcoin."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Where is bch.ee Parasite Pool located?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "The pool server runs in Frankfurt, Germany. Invoicing and domain purchases are handled through Estonia via the Estonian e-Residency programme. The operator personally lives in Turkey."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Why Bitcoin Cash and not Bitcoin?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Bitcoin Cash had regular pools and solo pools but no Parasite pool. The model is genuinely exciting, the gap was there, and no one had filled it yet. bch.ee Parasite Pool exists to change that."
+        }
+      }
+    ]
+  }
+  </script>
+</body>
+</html>
