@@ -930,7 +930,7 @@ code.connect-value {
   background: var(--bg-card);
 }
 
-#bestshares-table tbody tr {
+#bestshares-table tbody td {
   transition: background .15s;
 }
 #bestshares-table tbody tr:hover td {
