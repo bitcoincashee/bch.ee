@@ -596,13 +596,15 @@ async function loadBestShares() {
           const base = (BLOCK_REWARD - 1) * 0.99 * (r.userLns / poolLns);
           payoutStr = base.toFixed(8) + ' BCH';
         }
+        const sharesStr = r.userLns != null ? formatDiffCompact(r.userLns) : '—';
         return `<tr>
           <td>${i + 1}</td>
           <td><code>${escapeHtml(maskAddress(r.address))}</code></td>
           <td>${icon} ${hrStr}</td>
-          <td>${bsCell}</td>
-          <td>${pctStr}</td>
-          <td>${payoutStr}</td>
+          <td class="col-bs">${bsCell}</td>
+          <td class="col-bs">${pctStr}</td>
+          <td class="col-payout">${payoutStr}</td>
+          <td class="col-payout">${sharesStr}</td>
         </tr>`;
       }).join('');
     }
@@ -613,9 +615,10 @@ async function loadBestShares() {
         <th>#</th>
         <th>Address</th>
         <th data-sort="hashrate" data-label="Hashrate" class="sort-th">Hashrate</th>
-        <th data-sort="bestshare" data-label="Best Share" class="sort-th">Best Share</th>
-        <th>% of Net Diff</th>
-        <th data-sort="payout" data-label="Est. Payout" class="sort-th">Est. Payout</th>
+        <th data-sort="bestshare" data-label="Best Share" class="sort-th col-bs">Best Share</th>
+        <th class="col-bs">% of Net Diff</th>
+        <th data-sort="payout" data-label="Est. Payout" class="sort-th col-payout">Est. Payout</th>
+        <th class="col-payout">Shares Sent</th>
       </tr></thead>
       <tbody></tbody>`;
 

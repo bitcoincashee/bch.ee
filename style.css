@@ -924,6 +924,11 @@ code.connect-value {
 .sort-th:hover { color: var(--text); }
 .sort-th.sort-active { color: var(--accent); }
 
+#bestshares-table .col-bs     { background: rgba(10, 193, 142, 0.025); }
+#bestshares-table .col-payout { background: rgba(240, 180, 41, 0.025); }
+#bestshares-table thead .col-bs     { border-top: 2px solid rgba(10, 193, 142, 0.18); }
+#bestshares-table thead .col-payout { border-top: 2px solid rgba(240, 180, 41, 0.18); }
+
 .miner-active-icon {
   display: inline-block;
   transform-origin: 75% 75%;
