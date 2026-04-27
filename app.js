@@ -618,7 +618,7 @@ async function loadBestShares() {
         <th data-sort="bestshare" data-label="Best Share" class="sort-th col-bs">Best Share</th>
         <th class="col-bs">% of Net Diff</th>
         <th data-sort="payout" data-label="Est. Payout" class="sort-th col-payout">Est. Payout</th>
-        <th class="col-payout">Shares Sent</th>
+        <th class="col-payout">Work Done</th>
       </tr></thead>
       <tbody></tbody>`;
 
