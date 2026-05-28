@@ -585,7 +585,11 @@ async function loadBestShares() {
 
       table.querySelector('tbody').innerHTML = sorted.map((r, i) => {
         const pct = (r.bestshare / networkDiff * 100);
-        const pctStr = pct >= 0.001 ? pct.toFixed(3) + '%' : '&lt; 0.001%';
+        const pctRaw = pct >= 0.001 ? pct.toFixed(3) + '%' : '&lt; 0.001%';
+        const pctTip = pct > 100
+          ? ` <span class="info-tip" data-tip="This share was sent before the last target was lowered">i</span>`
+          : '';
+        const pctStr = pctRaw + pctTip;
         const hps = hashrateToHps(r.hashrate1m);
         const icon = hps > 0 ? '<span class="miner-active-icon">⛏️</span>' : '<span class="miner-idle-icon">💤</span>';
         const hrStr = escapeHtml(parseHashrateStr(r.hashrate1m));

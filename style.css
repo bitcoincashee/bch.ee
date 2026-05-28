@@ -956,6 +956,50 @@ code.connect-value {
   50%       { transform: rotate(12deg); }
 }
 
+/* ── Info tooltip ── */
+
+.info-tip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  margin-left: 5px;
+  border-radius: 50%;
+  border: 1px solid var(--muted);
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: default;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+.info-tip::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 7px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1c2333;
+  border: 1px solid rgba(255,255,255,.12);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.4;
+  white-space: nowrap;
+  padding: 5px 9px;
+  border-radius: 5px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .15s;
+  z-index: 10;
+}
+
+.info-tip:hover::after { opacity: 1; }
+
 /* ── FAQ ── */
 
 .faq-list {
