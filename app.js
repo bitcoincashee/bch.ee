@@ -11,7 +11,7 @@ const DISCLAIMER_HTML = `
   <div>
     <strong>Disclaimer</strong>
     <p>Participation in Bitcoin Cash mining, including through bch.ee Parasite Pool, which is still considered in beta testing, involves risks such as market volatility, hardware failure, and changes in network difficulty. bch.ee Parasite Pool is in beta and has not yet found a block; there is no assurance of future block discoveries or payouts. Users should exercise caution and consider their financial situation before engaging in mining activities.</p>
-    <p style="margin-top:.75rem">bch.ee Parasite Pool shall not be held responsible for any losses, missed payouts, technical failures, or interruptions of service of any kind. That said, we are committed to acting in good faith — if an error occurs on our end, we will make every reasonable effort to investigate and make it right.</p>
+    <p style="margin-top:.75rem">bch.ee Parasite Pool shall not be held responsible for any losses, missed payouts, technical failures, or interruptions of service of any kind.</p>
   </div>
 `;
 
@@ -507,40 +507,29 @@ function maskAddress(addr) {
 
 async function loadBestShares() {
   if (bestSharesLoaded) return;
+  bestSharesLoaded = true;
 
   const loading = document.getElementById('bestshares-loading');
   const tableCard = document.getElementById('bestshares-table-card');
   const table = document.getElementById('bestshares-table');
 
   try {
-    // Step 1: Get all addresses from pool.work
-    const workResp = await fetch(`${API_BASE}/pool/pool.work`, { cache: 'no-cache' });
+    // Fetch pool.work and pool.status in parallel
+    const [workResp, statusResp] = await Promise.all([
+      fetch(`${API_BASE}/pool/pool.work`, { cache: 'no-cache' }),
+      fetch(`${API_BASE}/pool/pool.status`, { cache: 'no-cache' }),
+    ]);
+
     if (!workResp.ok) throw new Error('Failed to fetch pool.work');
+
     const work = await workResp.json();
+    const statusText = await statusResp.text();
 
     const addresses = [...new Set([
       ...Object.keys(work.payouts ?? {}),
       ...Object.keys(work.postponed ?? {})
     ])];
 
-    // Step 2: Fetch each user's data
-    const results = await Promise.all(addresses.map(async (addr) => {
-      try {
-        const resp = await fetch(`${API_BASE}/users/${encodeURIComponent(addr)}`, { cache: 'no-cache' });
-        if (!resp.ok) return null;
-        const data = await resp.json();
-        return {
-          address:    addr,
-          bestshare:  data.bestshare ?? 0,
-          hashrate1m: data.hashrate1m ?? null,
-          userLns:    data.herp ?? data.lns ?? data.shares ?? null
-        };
-      } catch { return null; }
-    }));
-
-    // Step 3: Get network difficulty
-    const statusResp = await fetch(`${API_BASE}/pool/pool.status`, { cache: 'no-cache' });
-    const statusText = await statusResp.text();
     const pool = {};
     statusText.trim().split('\n').forEach(line => {
       try { Object.assign(pool, JSON.parse(line)); } catch {}
@@ -550,19 +539,29 @@ async function loadBestShares() {
     const accepted = pool.accepted;
     const networkDiff = (diffPercent > 0 && accepted > 0) ? accepted / (diffPercent / 100) : 874000000000;
 
-    const rows = results.filter(r => r && r.bestshare > 0);
     const BLOCK_REWARD = poolReward ?? 3.125;
     const bsMedals = ['🏆', '🥈', '🥉'];
-    const top3Addresses = [...rows]
-      .sort((a, b) => b.bestshare - a.bestshare)
-      .slice(0, 3)
-      .map(r => r.address);
+
+    // addr → row object once loaded, null if fetch returned no useful data, absent if pending
+    const userData = new Map();
 
     let sortCol = 'bestshare';
-    let sortDir = -1; // -1 = descending, 1 = ascending
+    let sortDir = -1;
 
     function renderBestSharesBody() {
-      const sorted = [...rows].sort((a, b) => {
+      const loaded = [];
+      const pending = [];
+      for (const addr of addresses) {
+        if (!userData.has(addr)) pending.push(addr);
+        else if (userData.get(addr) !== null) loaded.push(userData.get(addr));
+      }
+
+      const top3 = [...loaded]
+        .sort((a, b) => b.bestshare - a.bestshare)
+        .slice(0, 3)
+        .map(r => r.address);
+
+      const sorted = [...loaded].sort((a, b) => {
         let av, bv;
         if (sortCol === 'hashrate') {
           av = hashrateToHps(a.hashrate1m);
@@ -570,7 +569,7 @@ async function loadBestShares() {
         } else if (sortCol === 'bestshare') {
           av = a.bestshare;
           bv = b.bestshare;
-        } else { // payout
+        } else {
           av = (a.userLns != null && poolLns > 0) ? a.userLns / poolLns : 0;
           bv = (b.userLns != null && poolLns > 0) ? b.userLns / poolLns : 0;
         }
@@ -583,37 +582,44 @@ async function loadBestShares() {
         th.textContent = th.dataset.label + (active ? (sortDir === -1 ? ' ▼' : ' ▲') : '');
       });
 
-      table.querySelector('tbody').innerHTML = sorted.map((r, i) => {
-        const pct = (r.bestshare / networkDiff * 100);
-        const pctRaw = pct >= 0.001 ? pct.toFixed(3) + '%' : '&lt; 0.001%';
-        const pctTip = pct > 100
-          ? ` <span class="info-tip" data-tip="This share was sent before the last target was lowered">i</span>`
-          : '';
-        const pctStr = pctRaw + pctTip;
-        const hps = hashrateToHps(r.hashrate1m);
-        const icon = hps > 0 ? '<span class="miner-active-icon">⛏️</span>' : '<span class="miner-idle-icon">💤</span>';
-        const hrStr = escapeHtml(parseHashrateStr(r.hashrate1m));
-        const medal = bsMedals[top3Addresses.indexOf(r.address)];
-        const bsCell = medal ? medal + ' ' + formatDiffCompact(r.bestshare) : formatDiffCompact(r.bestshare);
-        let payoutStr = '—';
-        if (r.userLns != null && poolLns != null && poolLns > 0) {
-          const base = (BLOCK_REWARD - 1) * 0.99 * (r.userLns / poolLns);
-          payoutStr = base.toFixed(8) + ' BCH';
-        }
-        const sharesStr = r.userLns != null ? formatDiffCompact(r.userLns) : '—';
-        return `<tr>
-          <td>${i + 1}</td>
-          <td><code>${escapeHtml(maskAddress(r.address))}</code></td>
-          <td>${icon} ${hrStr}</td>
-          <td class="col-bs">${bsCell}</td>
-          <td class="col-bs">${pctStr}</td>
-          <td class="col-payout">${payoutStr}</td>
-          <td class="col-payout">${sharesStr}</td>
-        </tr>`;
-      }).join('');
+      table.querySelector('tbody').innerHTML = [
+        ...sorted.map((r, i) => {
+          const pct = (r.bestshare / networkDiff * 100);
+          const pctRaw = pct >= 0.001 ? pct.toFixed(3) + '%' : '&lt; 0.001%';
+          const pctTip = pct > 100
+            ? ` <span class="info-tip" data-tip="This share was sent before the last target was lowered">i</span>`
+            : '';
+          const hps = hashrateToHps(r.hashrate1m);
+          const icon = hps > 0 ? '<span class="miner-active-icon">⛏️</span>' : '<span class="miner-idle-icon">💤</span>';
+          const medal = bsMedals[top3.indexOf(r.address)];
+          const bsCell = medal ? medal + ' ' + formatDiffCompact(r.bestshare) : formatDiffCompact(r.bestshare);
+          let payoutStr = '—';
+          if (r.userLns != null && poolLns != null && poolLns > 0) {
+            const base = (BLOCK_REWARD - 1) * 0.99 * (r.userLns / poolLns);
+            payoutStr = base.toFixed(8) + ' BCH';
+          }
+          return `<tr>
+            <td>${i + 1}</td>
+            <td><code>${escapeHtml(maskAddress(r.address))}</code></td>
+            <td>${icon} ${escapeHtml(parseHashrateStr(r.hashrate1m))}</td>
+            <td class="col-bs">${bsCell}</td>
+            <td class="col-bs">${pctRaw}${pctTip}</td>
+            <td class="col-payout">${payoutStr}</td>
+            <td class="col-payout">${r.userLns != null ? formatDiffCompact(r.userLns) : '—'}</td>
+          </tr>`;
+        }),
+        ...pending.map((addr, i) => `<tr>
+          <td>${sorted.length + i + 1}</td>
+          <td><code>${escapeHtml(maskAddress(addr))}</code></td>
+          <td class="bs-pending">—</td>
+          <td class="col-bs bs-pending">—</td>
+          <td class="col-bs bs-pending">—</td>
+          <td class="col-payout bs-pending">—</td>
+          <td class="col-payout bs-pending">—</td>
+        </tr>`)
+      ].join('');
     }
 
-    // Build thead with sortable headers
     table.innerHTML = `
       <thead><tr>
         <th>#</th>
@@ -628,22 +634,34 @@ async function loadBestShares() {
 
     table.querySelectorAll('th[data-sort]').forEach(th => {
       th.addEventListener('click', () => {
-        if (sortCol === th.dataset.sort) {
-          sortDir *= -1;
-        } else {
-          sortCol = th.dataset.sort;
-          sortDir = -1;
-        }
+        if (sortCol === th.dataset.sort) sortDir *= -1;
+        else { sortCol = th.dataset.sort; sortDir = -1; }
         renderBestSharesBody();
       });
     });
 
-    renderBestSharesBody();
     loading.classList.add('hidden');
     tableCard.classList.remove('hidden');
-    bestSharesLoaded = true;
+    renderBestSharesBody();
+
+    // Fetch each user individually; update their row as data arrives
+    addresses.forEach(addr => {
+      fetch(`${API_BASE}/users/${encodeURIComponent(addr)}`, { cache: 'no-cache' })
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          userData.set(addr, (data && data.bestshare > 0) ? {
+            address:    addr,
+            bestshare:  data.bestshare,
+            hashrate1m: data.hashrate1m ?? null,
+            userLns:    data.herp ?? data.lns ?? data.shares ?? null
+          } : null);
+          renderBestSharesBody();
+        })
+        .catch(() => { userData.set(addr, null); renderBestSharesBody(); });
+    });
 
   } catch (err) {
+    bestSharesLoaded = false;
     console.warn('Best shares unavailable:', err.message);
     loading.textContent = 'Could not load best shares.';
   }

@@ -920,6 +920,8 @@ code.connect-value {
 
 .workers-table th:not(:first-child) { text-align: right; }
 
+.bs-pending { color: var(--muted); opacity: .4; }
+
 .sort-th { cursor: pointer; user-select: none; transition: color .15s; }
 .sort-th:hover { color: var(--text); }
 .sort-th.sort-active { color: var(--accent); }
