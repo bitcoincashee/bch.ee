@@ -922,6 +922,29 @@ code.connect-value {
 
 .bs-pending { color: var(--muted); opacity: .4; }
 
+#bestshares-table .bs-cutoff-row td {
+  padding: .55rem .75rem;
+  border-bottom: 1px dashed var(--border);
+  background: rgba(240, 180, 41, 0.04);
+  text-align: center;
+  white-space: normal;
+  font-family: 'Ubuntu', sans-serif;
+  color: var(--muted);
+  max-width: none;
+  overflow: visible;
+  text-overflow: clip;
+}
+.bs-cutoff-label {
+  color: var(--muted);
+  font-size: .75rem;
+  letter-spacing: .02em;
+}
+.bs-postponed-tag {
+  color: var(--muted);
+  font-size: .8rem;
+  font-style: italic;
+}
+
 .sort-th { cursor: pointer; user-select: none; transition: color .15s; }
 .sort-th:hover { color: var(--text); }
 .sort-th.sort-active { color: var(--accent); }

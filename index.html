@@ -508,7 +508,7 @@
         </div>
       </div>
 
-      <p id="user-payout-note" class="hidden" style="color:var(--muted);font-size:.8rem;margin-top:1rem">These are estimates based on current round data. Actual payouts may differ.</p>
+      <p id="user-payout-note" class="hidden" style="color:var(--muted);font-size:.8rem;margin-top:1rem">These are estimates based on current round data. Actual payouts may differ. Shares below 546 sats are postponed and carry over automatically into the next round.</p>
       <div id="user-payout-grid" class="card-grid hidden" style="margin-top:.5rem">
         <div class="card stat-card">
           <div class="stat-label">If you find the block</div>
@@ -567,7 +567,7 @@
     <section id="bestshares" class="section">
       <div class="hero">
         <h1>Current Best <span class="accent">Shares</span></h1>
-        <p class="hero-sub">Leaderboard of miners active this round. <strong>Best Share</strong> and <strong>% of Net Diff</strong> show how close each miner has come to solving a block — a share reaching 100% solves it. <strong>Est. Payout</strong> and <strong>Work Done</strong> reflect their total round contribution and expected earnings.</p>
+        <p class="hero-sub">Leaderboard of miners active this round. <strong>Best Share</strong> and <strong>% of Net Diff</strong> show how close each miner has come to solving a block — a share reaching 100% solves it. <strong>Est. Payout</strong> and <strong>Work Done</strong> reflect their total round contribution and expected earnings. Miners whose payout would fall below <strong>546 sats</strong> are marked <strong>Postponed</strong> — their shares aren't lost, they carry over automatically into the next round.</p>
       </div>
       <div id="bestshares-loading" class="card text-center">Loading...</div>
       <div id="bestshares-table-card" class="card hidden" style="margin-top:1.5rem">

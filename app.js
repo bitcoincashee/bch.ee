@@ -3,6 +3,8 @@
    =========================== */
 
 const API_BASE = 'https://para.bch.ee';
+const DUST_BCH = 0.00000546; // 546 sats — payouts below this are postponed to the next round
+const DUST_TIP = 'Payout is under 546 sats — carried over to the next round automatically';
 
 // ── Disclaimer ───────────────────────────────────────────
 
@@ -20,12 +22,33 @@ document.querySelectorAll('.disclaimer-placeholder').forEach(el => {
   el.innerHTML = DISCLAIMER_HTML;
 });
 
+// ── pool.work (payouts/postponed membership for this round) ─
+
+let poolWorkCache   = null;
+let poolWorkPromise = null;
+
+function getPoolWork() {
+  if (poolWorkCache) return Promise.resolve(poolWorkCache);
+  if (!poolWorkPromise) {
+    poolWorkPromise = fetch(`${API_BASE}/pool/pool.work`, { cache: 'no-cache' })
+      .then(r => r.ok ? r.json() : null)
+      .then(w => { poolWorkCache = w; return w; })
+      .catch(() => null);
+  }
+  return poolWorkPromise;
+}
+
+function stripCashAddrPrefix(addr) {
+  return addr.replace(/^bitcoincash:/i, '');
+}
+
 // ── State ────────────────────────────────────────────────
 
 let poolLns          = null;  // total pool shares (herp) — set when pool stats load
 let poolReward       = null;  // actual block reward from API
 let userPayoutFinder = null;  // BCH payout if user finds block
 let userPayoutShare  = null;  // BCH payout if someone else finds block
+let userShareIsDust  = false; // true when the proportional share is under 546 sats (postponed)
 let bchPrice         = null;  // BCH price in USD
 let blocksLoaded     = false;
 let bestSharesLoaded = false;
@@ -104,6 +127,11 @@ function formatHashrate(hps) {
   if (hps >= 1e6)  return (hps / 1e6).toFixed(2)  + ' MH/s';
   if (hps >= 1e3)  return (hps / 1e3).toFixed(2)  + ' KH/s';
   return hps.toFixed(0) + ' H/s';
+}
+
+function formatSats(bch) {
+  if (bch == null || isNaN(bch)) return '—';
+  return Math.round(bch * 1e8).toLocaleString('en-US') + ' sats';
 }
 
 function formatDiffCompact(n) {
@@ -253,6 +281,25 @@ function relativeTime(ts) {
   return 'Now';
 }
 
+function finderCaption() {
+  return userShareIsDust ? '1 BCH bonus (your share is under 546 sats, postponed)' : '1 BCH bonus + your share';
+}
+
+function shareCaption() {
+  return userShareIsDust ? 'under 546 sats — carries over to the next round' : 'your proportional share only';
+}
+
+function updatePayoutUsd(price) {
+  if (price == null) return;
+  const fmt = bch => '$' + (bch * price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (userPayoutFinder != null)
+    document.getElementById('user-payout-finder-usd').innerHTML = fmt(userPayoutFinder) + '<br>' + finderCaption();
+  if (userPayoutShare != null)
+    document.getElementById('user-payout-share-usd').innerHTML = userShareIsDust
+      ? shareCaption()
+      : fmt(userPayoutShare) + '<br>' + shareCaption();
+}
+
 async function doLookup() {
   const addr = addrInput.value.trim();
   if (!addr) { addrInput.focus(); return; }
@@ -271,8 +318,9 @@ async function doLookup() {
   document.getElementById('user-workers-card').classList.add('hidden');
   userPayoutFinder = null;
   userPayoutShare  = null;
-  document.getElementById('user-payout-finder-usd').textContent = '1 BCH bonus + your share';
-  document.getElementById('user-payout-share-usd').textContent  = 'your proportional share only';
+  userShareIsDust  = false;
+  document.getElementById('user-payout-finder-usd').textContent = finderCaption();
+  document.getElementById('user-payout-share-usd').textContent  = shareCaption();
   ['user-chance-day','user-chance-week','user-chance-month'].forEach(id => {
     const el = document.getElementById(id);
     el.textContent = '—';
@@ -328,8 +376,21 @@ async function doLookup() {
       const base = (BLOCK_REWARD - FINDER_BONUS) * POOL_FEE * (userLns / poolLns);
       userPayoutFinder = base + FINDER_BONUS;
       userPayoutShare  = base;
+
+      // Prefer the pool's actual payout-cutoff membership (rank-based, not a
+      // flat dust amount) over our own estimate; fall back to the dust
+      // estimate only if this address isn't listed in either group.
+      const work = await getPoolWork();
+      const addrKey = stripCashAddrPrefix(addr);
+      const inPayouts   = work && Object.keys(work.payouts   ?? {}).some(k => stripCashAddrPrefix(k) === addrKey);
+      const inPostponed = work && Object.keys(work.postponed ?? {}).some(k => stripCashAddrPrefix(k) === addrKey);
+      userShareIsDust = inPostponed ? true : inPayouts ? false : base < DUST_BCH;
       document.getElementById('user-payout-finder').textContent = userPayoutFinder.toFixed(6) + ' BCH';
-      document.getElementById('user-payout-share').textContent  = userPayoutShare.toFixed(6) + ' BCH';
+      document.getElementById('user-payout-share').innerHTML = userShareIsDust
+        ? `${formatSats(base)} <span class="bs-postponed-tag">Postponed</span> <span class="info-tip" data-tip="${DUST_TIP}">i</span>`
+        : userPayoutShare.toFixed(6) + ' BCH';
+      document.getElementById('user-payout-finder-usd').textContent = finderCaption();
+      document.getElementById('user-payout-share-usd').textContent  = shareCaption();
       payoutGrid.classList.remove('hidden');
       document.getElementById('user-payout-note').classList.remove('hidden');
     } else {
@@ -338,11 +399,7 @@ async function doLookup() {
 
     // Show USD values from cached price when hashrate is zero (loadUserChance won't run or bails early)
     if (!hashrateToHps(rawHashrate) && bchPrice != null) {
-      const fmt = bch => '$' + (bch * bchPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      if (userPayoutFinder != null)
-        document.getElementById('user-payout-finder-usd').innerHTML = fmt(userPayoutFinder) + '<br>1 BCH bonus + your share';
-      if (userPayoutShare != null)
-        document.getElementById('user-payout-share-usd').innerHTML  = fmt(userPayoutShare)  + '<br>your proportional share only';
+      updatePayoutUsd(bchPrice);
     }
 
     grid.classList.remove('hidden');
@@ -408,13 +465,7 @@ async function loadUserChance(hashrateStr) {
       document.getElementById(id).classList.remove('skeleton');
     });
 
-    if (d.price != null) {
-      const fmt = bch => '$' + (bch * d.price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      if (userPayoutFinder != null)
-        document.getElementById('user-payout-finder-usd').innerHTML = fmt(userPayoutFinder) + '<br>1 BCH bonus + your share';
-      if (userPayoutShare != null)
-        document.getElementById('user-payout-share-usd').innerHTML  = fmt(userPayoutShare)  + '<br>your proportional share only';
-    }
+    updatePayoutUsd(d.price);
   } catch (e) {
     console.warn('User chance unavailable:', e.message);
   }
@@ -515,20 +566,19 @@ async function loadBestShares() {
 
   try {
     // Fetch pool.work and pool.status in parallel
-    const [workResp, statusResp] = await Promise.all([
-      fetch(`${API_BASE}/pool/pool.work`, { cache: 'no-cache' }),
+    const [work, statusResp] = await Promise.all([
+      getPoolWork(),
       fetch(`${API_BASE}/pool/pool.status`, { cache: 'no-cache' }),
     ]);
 
-    if (!workResp.ok) throw new Error('Failed to fetch pool.work');
+    if (!work) throw new Error('Failed to fetch pool.work');
 
-    const work = await workResp.json();
     const statusText = await statusResp.text();
 
-    const addresses = [...new Set([
-      ...Object.keys(work.payouts ?? {}),
-      ...Object.keys(work.postponed ?? {})
-    ])];
+    const addrGroup = new Map();
+    Object.keys(work.payouts ?? {}).forEach(a => addrGroup.set(a, 'payouts'));
+    Object.keys(work.postponed ?? {}).forEach(a => { if (!addrGroup.has(a)) addrGroup.set(a, 'postponed'); });
+    const addresses = [...addrGroup.keys()];
 
     const pool = {};
     statusText.trim().split('\n').forEach(line => {
@@ -548,20 +598,8 @@ async function loadBestShares() {
     let sortCol = 'bestshare';
     let sortDir = -1;
 
-    function renderBestSharesBody() {
-      const loaded = [];
-      const pending = [];
-      for (const addr of addresses) {
-        if (!userData.has(addr)) pending.push(addr);
-        else if (userData.get(addr) !== null) loaded.push(userData.get(addr));
-      }
-
-      const top3 = [...loaded]
-        .sort((a, b) => b.bestshare - a.bestshare)
-        .slice(0, 3)
-        .map(r => r.address);
-
-      const sorted = [...loaded].sort((a, b) => {
+    function sortRows(rows) {
+      return [...rows].sort((a, b) => {
         let av, bv;
         if (sortCol === 'hashrate') {
           av = hashrateToHps(a.hashrate1m);
@@ -575,6 +613,65 @@ async function loadBestShares() {
         }
         return (av - bv) * sortDir;
       });
+    }
+
+    function renderRow(r, rank, top3) {
+      const pct = (r.bestshare / networkDiff * 100);
+      const pctRaw = pct >= 0.001 ? pct.toFixed(3) + '%' : '&lt; 0.001%';
+      const pctTip = pct > 100
+        ? ` <span class="info-tip" data-tip="This share was sent before the last target was lowered">i</span>`
+        : '';
+      const hps = hashrateToHps(r.hashrate1m);
+      const icon = hps > 0 ? '<span class="miner-active-icon">⛏️</span>' : '<span class="miner-idle-icon">💤</span>';
+      const medal = bsMedals[top3.indexOf(r.address)];
+      const bsCell = medal ? medal + ' ' + formatDiffCompact(r.bestshare) : formatDiffCompact(r.bestshare);
+      let payoutStr = '—';
+      if (r.userLns != null && poolLns != null && poolLns > 0) {
+        const base = (BLOCK_REWARD - 1) * 0.99 * (r.userLns / poolLns);
+        payoutStr = r.group === 'postponed'
+          ? `${formatSats(base)} <span class="bs-postponed-tag">Postponed</span> <span class="info-tip" data-tip="${DUST_TIP}">i</span>`
+          : base.toFixed(8) + ' BCH';
+      }
+      return `<tr>
+        <td>${rank}</td>
+        <td><code>${escapeHtml(maskAddress(r.address))}</code></td>
+        <td>${icon} ${escapeHtml(parseHashrateStr(r.hashrate1m))}</td>
+        <td class="col-bs">${bsCell}</td>
+        <td class="col-bs">${pctRaw}${pctTip}</td>
+        <td class="col-payout">${payoutStr}</td>
+        <td class="col-payout">${r.userLns != null ? formatDiffCompact(r.userLns) : '—'}</td>
+      </tr>`;
+    }
+
+    function renderPendingRow(addr, rank) {
+      return `<tr>
+        <td>${rank}</td>
+        <td><code>${escapeHtml(maskAddress(addr))}</code></td>
+        <td class="bs-pending">—</td>
+        <td class="col-bs bs-pending">—</td>
+        <td class="col-bs bs-pending">—</td>
+        <td class="col-payout bs-pending">—</td>
+        <td class="col-payout bs-pending">—</td>
+      </tr>`;
+    }
+
+    function renderBestSharesBody() {
+      const loaded = [];
+      const pending = [];
+      for (const addr of addresses) {
+        if (!userData.has(addr)) pending.push(addr);
+        else if (userData.get(addr) !== null) loaded.push(userData.get(addr));
+      }
+
+      const top3 = [...loaded]
+        .sort((a, b) => b.bestshare - a.bestshare)
+        .slice(0, 3)
+        .map(r => r.address);
+
+      const loadedPayout    = sortRows(loaded.filter(r => r.group === 'payouts'));
+      const loadedPostponed = sortRows(loaded.filter(r => r.group === 'postponed'));
+      const pendingPayout    = pending.filter(a => addrGroup.get(a) === 'payouts');
+      const pendingPostponed = pending.filter(a => addrGroup.get(a) === 'postponed');
 
       table.querySelectorAll('th[data-sort]').forEach(th => {
         const active = th.dataset.sort === sortCol;
@@ -582,42 +679,20 @@ async function loadBestShares() {
         th.textContent = th.dataset.label + (active ? (sortDir === -1 ? ' ▼' : ' ▲') : '');
       });
 
-      table.querySelector('tbody').innerHTML = [
-        ...sorted.map((r, i) => {
-          const pct = (r.bestshare / networkDiff * 100);
-          const pctRaw = pct >= 0.001 ? pct.toFixed(3) + '%' : '&lt; 0.001%';
-          const pctTip = pct > 100
-            ? ` <span class="info-tip" data-tip="This share was sent before the last target was lowered">i</span>`
-            : '';
-          const hps = hashrateToHps(r.hashrate1m);
-          const icon = hps > 0 ? '<span class="miner-active-icon">⛏️</span>' : '<span class="miner-idle-icon">💤</span>';
-          const medal = bsMedals[top3.indexOf(r.address)];
-          const bsCell = medal ? medal + ' ' + formatDiffCompact(r.bestshare) : formatDiffCompact(r.bestshare);
-          let payoutStr = '—';
-          if (r.userLns != null && poolLns != null && poolLns > 0) {
-            const base = (BLOCK_REWARD - 1) * 0.99 * (r.userLns / poolLns);
-            payoutStr = base.toFixed(8) + ' BCH';
-          }
-          return `<tr>
-            <td>${i + 1}</td>
-            <td><code>${escapeHtml(maskAddress(r.address))}</code></td>
-            <td>${icon} ${escapeHtml(parseHashrateStr(r.hashrate1m))}</td>
-            <td class="col-bs">${bsCell}</td>
-            <td class="col-bs">${pctRaw}${pctTip}</td>
-            <td class="col-payout">${payoutStr}</td>
-            <td class="col-payout">${r.userLns != null ? formatDiffCompact(r.userLns) : '—'}</td>
-          </tr>`;
-        }),
-        ...pending.map((addr, i) => `<tr>
-          <td>${sorted.length + i + 1}</td>
-          <td><code>${escapeHtml(maskAddress(addr))}</code></td>
-          <td class="bs-pending">—</td>
-          <td class="col-bs bs-pending">—</td>
-          <td class="col-bs bs-pending">—</td>
-          <td class="col-payout bs-pending">—</td>
-          <td class="col-payout bs-pending">—</td>
-        </tr>`)
-      ].join('');
+      let rank = 1;
+      let html = '';
+      html += loadedPayout.map(r => renderRow(r, rank++, top3)).join('');
+      html += pendingPayout.map(a => renderPendingRow(a, rank++)).join('');
+
+      if (loadedPostponed.length + pendingPostponed.length > 0) {
+        html += `<tr class="bs-cutoff-row"><td colspan="7">
+          <span class="bs-cutoff-label">⏳ Payout cutoff — shares below pay out under 546 sats, so they're postponed and carried over to the next round</span>
+        </td></tr>`;
+        html += loadedPostponed.map(r => renderRow(r, rank++, top3)).join('');
+        html += pendingPostponed.map(a => renderPendingRow(a, rank++)).join('');
+      }
+
+      table.querySelector('tbody').innerHTML = html;
     }
 
     table.innerHTML = `
@@ -653,7 +728,8 @@ async function loadBestShares() {
             address:    addr,
             bestshare:  data.bestshare,
             hashrate1m: data.hashrate1m ?? null,
-            userLns:    data.herp ?? data.lns ?? data.shares ?? null
+            userLns:    data.herp ?? data.lns ?? data.shares ?? null,
+            group:      addrGroup.get(addr)
           } : null);
           renderBestSharesBody();
         })
