@@ -922,6 +922,28 @@ code.connect-value {
 
 .bs-pending { color: var(--muted); opacity: .4; }
 
+/* Fixed layout + explicit column widths keep the long cutoff-row message
+   from forcing the whole table (and its wrapper) wider than the card —
+   table-layout:auto sizes columns to fit unwrapped content, which blows
+   out a colspan cell's text no matter what white-space/overflow it's given. */
+#bestshares-table { table-layout: fixed; }
+#bestshares-table thead th:nth-child(1) { width: 7%; }
+#bestshares-table thead th:nth-child(2) { width: 25%; }
+#bestshares-table thead th:nth-child(3) { width: 13%; }
+#bestshares-table thead th:nth-child(4) { width: 13%; }
+#bestshares-table thead th:nth-child(5) { width: 13%; }
+#bestshares-table thead th:nth-child(6) { width: 17%; }
+#bestshares-table thead th:nth-child(7) { width: 12%; }
+
+/* The rank number never needs the worker-name ellipsis/max-width this
+   cell inherits from .workers-table td:first-child — let it render in
+   full even if the fixed column is tight on very narrow viewports. */
+#bestshares-table tbody td:first-child {
+  overflow: visible;
+  text-overflow: clip;
+  max-width: none;
+}
+
 #bestshares-table .bs-cutoff-row td {
   padding: .55rem .75rem;
   border-bottom: 1px dashed var(--border);
@@ -1014,7 +1036,9 @@ code.connect-value {
   font-size: 11px;
   font-weight: 400;
   line-height: 1.4;
-  white-space: nowrap;
+  white-space: normal;
+  width: max-content;
+  max-width: 220px;
   padding: 5px 9px;
   border-radius: 5px;
   pointer-events: none;
