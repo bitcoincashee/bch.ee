@@ -56,7 +56,7 @@
 
       <details class="faq-item" open>
         <summary>What is bch.ee Parasite Pool?</summary>
-        <p>bch.ee Parasite Pool is a Bitcoin Cash (BCH) mining pool inspired by the original <a href="https://parasite.space" target="_blank" rel="noopener">parasite.space</a> BTC pool. It combines a 1 BCH block finder bonus with proportional Full Round Payouts for all miners. It is run by the developer of <a href="https://solochance.org" target="_blank" rel="noopener">SoloChance.org</a> and is currently in beta.</p>
+        <p>bch.ee Parasite Pool is a Bitcoin Cash (BCH) mining pool inspired by the original <a href="https://parasite.space" target="_blank" rel="noopener">parasite.space</a> BTC pool. It combines a 1 BCH block finder bonus with proportional Full Round Payouts (PROP) for all miners. It is run by the developer of <a href="https://solochance.org" target="_blank" rel="noopener">SoloChance.org</a> and is currently in beta.</p>
       </details>
 
       <details class="faq-item">
@@ -69,16 +69,16 @@
         <summary>How do payouts work?</summary>
         <p>Every time a block is found, three things happen:</p>
         <ol class="faq-ol">
-          <li><strong>1 BCH</strong> is paid to the miner who found the block.</li>
-          <li><strong>99% of (Block Reward + Tx Fees − 1 BCH)</strong> is split proportionally among all miners based on their shares submitted since the last block.</li>
+          <li><strong>1 BCH</strong> is paid to the miner who found the block, directly in the block's coinbase.</li>
+          <li><strong>99% of (Block Reward + Tx Fees − 1 BCH)</strong> is split proportionally (PROP) among all miners based on their shares submitted since the last block — no minimum, even 1 sat is paid.</li>
           <li><strong>1%</strong> goes to the pool fee.</li>
         </ol>
-        <p>The block finder receives both the 1 BCH bonus and their proportional share of the remaining 99%.</p>
+        <p>The block finder receives both the 1 BCH bonus and their proportional share of the remaining 99%, all paid in that same coinbase transaction. It's fully trustless — no pool-side ledger to trust, and no ongoing bookkeeping.</p>
       </details>
 
       <details class="faq-item">
         <summary>What is Full Round Payouts?</summary>
-        <p>Full Round means every share you submit between two blocks counts toward your payout — there is no artificial time window that excludes older shares from earlier in the round. One block found starts a new round; the next block found closes it. All shares within that round are counted equally and proportionally.</p>
+        <p>Full Round means every share submitted since the last block counts toward this round's payout — the window is the round itself, not a fixed number of shares or a fixed time limit that could cut off shares from early in the round or pull in shares from a previous one. One block found starts a new round; the next block found closes it. All shares within that round are counted equally and proportionally — this is known as a PROP (proportional) payment scheme.</p>
       </details>
 
       <details class="faq-item">
@@ -98,7 +98,7 @@
 
       <details class="faq-item">
         <summary>When will I receive my payout?</summary>
-        <p>Payouts are sent when a block is found. The 1 BCH finder bonus is paid after 100 confirmations (~16.5 hours). Your proportional share is paid from the same block. Since the pool is in beta and has not yet found a block, there are no payouts yet.</p>
+        <p>There's no separate "sending" step — both the 1 BCH finder bonus and your proportional share are placed directly as outputs in that block's own coinbase transaction the moment it's found. Coinbase outputs are spendable after 100 confirmations (~16.5 hours), per standard Bitcoin rules. There's no minimum payout: even 1 sat is paid, and there's no ongoing bookkeeping to wait on. Since the pool is in beta and has not yet found a block, there are no payouts yet.</p>
       </details>
 
       <details class="faq-item">
@@ -175,7 +175,7 @@
         "name": "What is bch.ee Parasite Pool?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "bch.ee Parasite Pool is a Bitcoin Cash (BCH) mining pool that combines a 1 BCH block finder bonus with proportional Full Round Payouts for all miners. It is run by the developer of SoloChance.org and is currently in beta."
+          "text": "bch.ee Parasite Pool is a Bitcoin Cash (BCH) mining pool that combines a 1 BCH block finder bonus with proportional Full Round Payouts (PROP) for all miners. It is run by the developer of SoloChance.org and is currently in beta."
         }
       },
       {
@@ -191,7 +191,7 @@
         "name": "How do payouts work?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Every time a block is found: 1 BCH is paid to the miner who found the block; 99% of (Block Reward + Tx Fees − 1 BCH) is split proportionally among all miners by shares; ~0.7% goes to the pool fee (effective, since the 1 BCH finder bonus is fee-free). The block finder receives both the 1 BCH bonus and their proportional share."
+          "text": "Every time a block is found: 1 BCH is paid to the miner who found the block, directly in the block's coinbase; 99% of (Block Reward + Tx Fees − 1 BCH) is split proportionally (PROP) among all miners by shares, with no minimum — even 1 sat is paid; ~0.7% goes to the pool fee (effective, since the 1 BCH finder bonus is fee-free). The block finder receives both the 1 BCH bonus and their proportional share, all in the same coinbase transaction — fully trustless, with no ongoing bookkeeping."
         }
       },
       {
@@ -199,7 +199,7 @@
         "name": "What is Full Round Payouts?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Full Round means every share submitted between two blocks counts toward your payout — there is no artificial time window that excludes older shares. One block starts a new round; the next block closes it."
+          "text": "Full Round means every share submitted since the last block counts toward this round's payout — the window is the round itself, not a fixed number of shares or a fixed time limit that could cut off early shares or pull in shares from a previous round. One block starts a new round; the next block closes it. This is known as a PROP (proportional) payment scheme."
         }
       },
       {
