@@ -305,10 +305,15 @@ function formatBch(n) {
   return n.toFixed(8).replace(/0+$/, '').replace(/\.$/, '') + ' BCH';
 }
 
-// bchPrice is null for tBCH (no real-world price) — omit the USD suffix entirely then
+// bchPrice is null for tBCH (no real-world price) — callers omit USD entirely then
+function formatUsd(bch) {
+  if (bchPrice == null || bch == null || isNaN(bch)) return null;
+  return '$' + (bch * bchPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 function formatUsdSuffix(bch) {
-  if (bchPrice == null || bch == null || isNaN(bch)) return '';
-  return ' ($' + (bch * bchPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ')';
+  const usd = formatUsd(bch);
+  return usd ? ` (${usd})` : '';
 }
 
 let payoutAmounts = null; // { finderBonus, minersTotal, fee } once loaded
@@ -707,9 +712,12 @@ async function loadBestShares() {
       const medal = bsMedals[top3.indexOf(r.address)];
       const bsCell = medal ? medal + ' ' + formatDiffCompact(r.bestshare) : formatDiffCompact(r.bestshare);
       let payoutStr = '—';
+      let payoutUsd = '';
       if (r.userLns != null && poolLns != null && poolLns > 0) {
         const base = (BLOCK_REWARD - 1) * 0.99 * (r.userLns / poolLns);
         payoutStr = base.toFixed(8) + ' BCH';
+        const usd = formatUsd(base);
+        if (usd) payoutUsd = `<div class="bs-payout-usd">${usd}</div>`;
       }
       return `<tr>
         <td>${rank}</td>
@@ -717,7 +725,7 @@ async function loadBestShares() {
         <td>${icon} ${escapeHtml(parseHashrateStr(r.hashrate1m))}</td>
         <td class="col-bs">${bsCell}</td>
         <td class="col-bs">${pctRaw}${pctTip}</td>
-        <td class="col-payout">${payoutStr}</td>
+        <td class="col-payout">${payoutStr}${payoutUsd}</td>
         <td class="col-payout">${r.userLns != null ? formatDiffCompact(r.userLns) : '—'}</td>
       </tr>`;
     }

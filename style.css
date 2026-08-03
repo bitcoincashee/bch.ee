@@ -961,6 +961,12 @@ code.connect-value {
   text-decoration: underline;
 }
 
+.bs-payout-usd {
+  font-size: .75rem;
+  color: var(--muted);
+  margin-top: .1rem;
+}
+
 /* The rank number never needs the worker-name ellipsis/max-width this
    cell inherits from .workers-table td:first-child — let it render in
    full even if the fixed column is tight on very narrow viewports. */
