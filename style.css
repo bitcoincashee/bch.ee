@@ -783,6 +783,8 @@ code.connect-value {
   border-radius: var(--radius);
   margin-bottom: .75rem;
   transition: transform .2s, box-shadow .2s, background .2s;
+  text-decoration: none;
+  color: inherit;
 }
 
 .block-row:hover {
@@ -808,6 +810,24 @@ code.connect-value {
   font-size: .82rem;
   color: var(--muted);
   white-space: nowrap;
+}
+
+.block-status {
+  display: inline-block;
+  font-size: .72rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  padding: .15rem .55rem;
+  border-radius: 999px;
+  background: var(--yellow-bg);
+  color: var(--yellow);
+  white-space: nowrap;
+}
+
+.block-status.confirmed {
+  background: var(--accent-dim);
+  color: var(--accent);
 }
 
 /* ── Utilities ── */
@@ -934,6 +954,22 @@ code.connect-value {
 #bestshares-table thead th:nth-child(5) { width: 13%; }
 #bestshares-table thead th:nth-child(6) { width: 17%; }
 #bestshares-table thead th:nth-child(7) { width: 12%; }
+
+/* Full (unmasked) addresses don't fit the fixed column on one line —
+   wrap instead of overflowing into neighboring cells. */
+#bestshares-table tbody td:nth-child(2) {
+  white-space: normal;
+  word-break: break-all;
+  text-align: left;
+}
+
+.bs-address {
+  cursor: pointer;
+}
+.bs-address:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
 
 /* The rank number never needs the worker-name ellipsis/max-width this
    cell inherits from .workers-table td:first-child — let it render in

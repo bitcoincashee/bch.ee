@@ -3,6 +3,7 @@
    =========================== */
 
 const API_BASE = 'https://para.bch.ee';
+const EXPLORER_BLOCK_URL = 'https://bchexplorer.cash/block';
 const DUST_BCH = 0.00000546; // 546 sats — payouts below this are postponed to the next round
 const DUST_TIP = 'Payout is under 546 sats — carried over to the next round automatically';
 
@@ -40,6 +41,52 @@ function getPoolWork() {
 
 function stripCashAddrPrefix(addr) {
   return addr.replace(/^bitcoincash:/i, '');
+}
+
+// ── pool/blocks/ (found blocks) ──────────────────────────────
+// /pool/blocks/ is an nginx autoindex JSON listing of one file per found
+// block, named "<height>.confirmed" or "<height>.unconfirmed". The listing
+// itself carries no block data — each file has to be fetched separately for
+// its hash/finder/time.
+
+let foundBlocksPromise = null;
+
+function parseBlockEntry(entry) {
+  const m = /^(\d+)\.(confirmed|unconfirmed)$/.exec(entry.name ?? '');
+  if (!m) return null;
+  return { name: entry.name, height: parseInt(m[1], 10), confirmed: m[2] === 'confirmed' };
+}
+
+// Not cached beyond de-duping simultaneous callers — loadPoolStats() polls
+// this every 30s for the home page's live block count, so a persistent
+// cache would freeze that count at whatever it read on the first load.
+function getFoundBlocks() {
+  if (!foundBlocksPromise) {
+    foundBlocksPromise = fetch(`${API_BASE}/pool/blocks/`, { cache: 'no-cache' })
+      .then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
+      .then(entries => (Array.isArray(entries) ? entries : [])
+        .filter(e => e.type === 'file')
+        .map(parseBlockEntry)
+        .filter(Boolean)
+        .sort((a, b) => a.height - b.height))
+      .finally(() => { foundBlocksPromise = null; });
+  }
+  return foundBlocksPromise;
+}
+
+const blockDetailsCache = new Map();
+
+function getBlockDetails(entry) {
+  if (!blockDetailsCache.has(entry.name)) {
+    blockDetailsCache.set(entry.name, fetch(`${API_BASE}/pool/blocks/${entry.name}`, { cache: 'no-cache' })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => ({ ...entry, ...data }))
+      .catch(() => entry));
+  }
+  return blockDetailsCache.get(entry.name);
 }
 
 // ── State ────────────────────────────────────────────────
@@ -179,8 +226,9 @@ async function loadPoolStats() {
     setStatValue('stat-workers',  pool.Workers  ?? pool.workers  ?? '—');
     setStatValue('stat-uptime',   formatUptime(pool.runtime));
     setStatValue('stat-bestshare', formatDiffCompact(pool.bestshare));
-    const blocksFound = pool.blocks ?? (Array.isArray(pool.solved) ? pool.solved.length : null);
-    setStatValue('stat-blocks', blocksFound ?? 0);
+    getFoundBlocks()
+      .then(blocks => setStatValue('stat-blocks', blocks.length))
+      .catch(() => setStatValue('stat-blocks', pool.blocks ?? 0));
 
     const effort = parseFloat(pool.diff ?? pool.difficulty);
     setStatValue('stat-effort', effort > 0 ? effort + '%' : '< 0.01%');
@@ -267,6 +315,12 @@ const addrInput  = document.getElementById('address-input');
 
 lookupBtn.addEventListener('click', doLookup);
 addrInput.addEventListener('keydown', e => { if (e.key === 'Enter') doLookup(); });
+
+function goToMyStats(address) {
+  addrInput.value = address;
+  showSection('mystats');
+  doLookup();
+}
 
 function relativeTime(ts) {
   if (!ts) return '—';
@@ -476,46 +530,58 @@ async function loadUserChance(hashrateStr) {
 async function loadBlocks() {
   if (blocksLoaded) return;
 
-  const banner = document.getElementById('blocks-status-banner');
-  const list   = document.getElementById('blocks-list');
-  const empty  = document.getElementById('blocks-empty');
+  const banner  = document.getElementById('blocks-status-banner');
+  const loading = document.getElementById('blocks-loading');
+  const list    = document.getElementById('blocks-list');
+  const empty   = document.getElementById('blocks-empty');
+
+  // Reset UI in case this is a retry after a previous failed attempt
+  // (blocksLoaded stays false on error, so the Blocks tab can re-trigger this)
+  banner.classList.add('hidden');
+  empty.classList.add('hidden');
+  loading.classList.remove('hidden');
 
   try {
-    const resp = await fetch(`${API_BASE}/pool/pool.status`, { cache: 'no-cache' });
+    const entries = await getFoundBlocks();
 
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const countEl = document.getElementById('blocks-total-count');
+    if (countEl) countEl.textContent = entries.length;
 
-    const text = await resp.text();
-    const pool = {};
-    text.trim().split('\n').forEach(line => {
-      try { Object.assign(pool, JSON.parse(line)); } catch {}
-    });
-
-    // ckpool exposes solved blocks in the top-level response
-    const solved = pool.solved ?? pool.blocks_solved ?? [];
-
-    if (!Array.isArray(solved) || solved.length === 0) {
+    if (!Array.isArray(entries) || entries.length === 0) {
+      loading.classList.add('hidden');
       empty.classList.remove('hidden');
       blocksLoaded = true;
       return;
     }
 
+    const details = await Promise.all(entries.map(getBlockDetails));
+
+    loading.classList.add('hidden');
     list.innerHTML = '';
-    solved.slice().reverse().forEach(b => {
-      const row = document.createElement('div');
+    details.slice().reverse().forEach(b => {
+      const hash      = b.hash   ?? null;
+      const height    = b.height ?? null;
+      const when      = b.time ?? b.createdate ?? b.timestamp;
+      const finder    = b.finder_address ?? b.solvedby ?? '';
+      const confirmed = b.confirmed;
+
+      // Link the row to its BCH Explorer page when we have an id to point at
+      const explorerId = height ?? hash;
+      const row = document.createElement(explorerId ? 'a' : 'div');
       row.className = 'block-row';
-      const hash   = b.hash  ?? b.blockhash ?? '—';
-      const height = b.height ?? b.block_height ?? '—';
-      const when   = b.createdate ?? b.time ?? b.timestamp;
-      const finder = b.username ?? b.worker ?? '';
+      if (explorerId) {
+        row.href = `${EXPLORER_BLOCK_URL}/${explorerId}`;
+        row.target = '_blank';
+        row.rel = 'noopener';
+      }
 
       const left = document.createElement('div');
       const heightEl = document.createElement('div');
       heightEl.className = 'block-height';
-      heightEl.textContent = 'Block #' + height;
+      heightEl.textContent = 'Block #' + (height ?? '—');
       const hashEl = document.createElement('div');
       hashEl.className = 'block-hash';
-      hashEl.textContent = hash;
+      hashEl.textContent = hash ?? '—';
       left.appendChild(heightEl);
       left.appendChild(hashEl);
       if (finder) {
@@ -527,8 +593,16 @@ async function loadBlocks() {
       }
 
       const right = document.createElement('div');
-      right.className = 'block-meta';
-      right.textContent = when ? new Date(when * 1000).toLocaleString() : '';
+      right.style.textAlign = 'right';
+      const statusEl = document.createElement('div');
+      statusEl.className = 'block-status' + (confirmed ? ' confirmed' : '');
+      statusEl.textContent = confirmed ? 'Confirmed' : 'Unconfirmed';
+      const whenEl = document.createElement('div');
+      whenEl.className = 'block-meta';
+      whenEl.style.marginTop = '.3rem';
+      whenEl.textContent = when ? new Date(when * 1000).toLocaleString() : '';
+      right.appendChild(statusEl);
+      right.appendChild(whenEl);
 
       row.appendChild(left);
       row.appendChild(right);
@@ -539,6 +613,7 @@ async function loadBlocks() {
 
   } catch (err) {
     console.warn('Blocks unavailable:', err.message);
+    loading.classList.add('hidden');
     banner.classList.remove('hidden');
   }
 }
@@ -547,13 +622,6 @@ async function loadBlocks() {
 
 function escapeHtml(str) {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-
-function maskAddress(addr) {
-  const prefix = addr.startsWith('bitcoincash:') ? 'bitcoincash:' : '';
-  const clean = addr.replace(/^bitcoincash:/, '');
-  if (clean.length <= 10) return addr;
-  return prefix + clean.slice(0, 5) + '...' + clean.slice(-5);
 }
 
 async function loadBestShares() {
@@ -634,7 +702,7 @@ async function loadBestShares() {
       }
       return `<tr>
         <td>${rank}</td>
-        <td><code>${escapeHtml(maskAddress(r.address))}</code></td>
+        <td><code class="bs-address" data-address="${escapeHtml(r.address)}">${escapeHtml(r.address)}</code></td>
         <td>${icon} ${escapeHtml(parseHashrateStr(r.hashrate1m))}</td>
         <td class="col-bs">${bsCell}</td>
         <td class="col-bs">${pctRaw}${pctTip}</td>
@@ -646,7 +714,7 @@ async function loadBestShares() {
     function renderPendingRow(addr, rank) {
       return `<tr>
         <td>${rank}</td>
-        <td><code>${escapeHtml(maskAddress(addr))}</code></td>
+        <td><code class="bs-address" data-address="${escapeHtml(addr)}">${escapeHtml(addr)}</code></td>
         <td class="bs-pending">—</td>
         <td class="col-bs bs-pending">—</td>
         <td class="col-bs bs-pending">—</td>
@@ -713,6 +781,12 @@ async function loadBestShares() {
         else { sortCol = th.dataset.sort; sortDir = -1; }
         renderBestSharesBody();
       });
+    });
+
+    // tbody is re-rendered on sort, so delegate from the table itself
+    table.addEventListener('click', e => {
+      const addrEl = e.target.closest('.bs-address');
+      if (addrEl) goToMyStats(addrEl.dataset.address);
     });
 
     loading.classList.add('hidden');
