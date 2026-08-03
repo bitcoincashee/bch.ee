@@ -752,9 +752,9 @@ async function loadBestShares() {
       fetch(`${API_BASE}/users/${encodeURIComponent(addr)}`, { cache: 'no-cache' })
         .then(r => r.ok ? r.json() : null)
         .then(data => {
-          userData.set(addr, (data && data.bestshare > 0) ? {
+          userData.set(addr, data ? {
             address:    addr,
-            bestshare:  data.bestshare,
+            bestshare:  data.bestshare ?? 0,
             hashrate1m: data.hashrate1m ?? null,
             userLns:    data.herp ?? data.lns ?? data.shares ?? null
           } : null);
