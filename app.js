@@ -4,8 +4,6 @@
 
 const API_BASE = 'https://para.bch.ee';
 const EXPLORER_BLOCK_URL = 'https://bchexplorer.cash/block';
-const DUST_BCH = 0.00000546; // 546 sats — payouts below this are postponed to the next round
-const DUST_TIP = 'Payout is under 546 sats — carried over to the next round automatically';
 
 // ── Disclaimer ───────────────────────────────────────────
 
@@ -37,10 +35,6 @@ function getPoolWork() {
       .catch(() => null);
   }
   return poolWorkPromise;
-}
-
-function stripCashAddrPrefix(addr) {
-  return addr.replace(/^bitcoincash:/i, '');
 }
 
 // ── pool/blocks/ (found blocks) ──────────────────────────────
@@ -95,7 +89,6 @@ let poolLns          = null;  // total pool shares (herp) — set when pool stat
 let poolReward       = null;  // actual block reward from API
 let userPayoutFinder = null;  // BCH payout if user finds block
 let userPayoutShare  = null;  // BCH payout if someone else finds block
-let userShareIsDust  = false; // true when the proportional share is under 546 sats (postponed)
 let bchPrice         = null;  // BCH price in USD
 let blocksLoaded     = false;
 let bestSharesLoaded = false;
@@ -174,11 +167,6 @@ function formatHashrate(hps) {
   if (hps >= 1e6)  return (hps / 1e6).toFixed(2)  + ' MH/s';
   if (hps >= 1e3)  return (hps / 1e3).toFixed(2)  + ' KH/s';
   return hps.toFixed(0) + ' H/s';
-}
-
-function formatSats(bch) {
-  if (bch == null || isNaN(bch)) return '—';
-  return Math.round(bch * 1e8).toLocaleString('en-US') + ' sats';
 }
 
 function formatDiffCompact(n) {
@@ -335,23 +323,16 @@ function relativeTime(ts) {
   return 'Now';
 }
 
-function finderCaption() {
-  return userShareIsDust ? '1 BCH bonus (your share is under 546 sats, postponed)' : '1 BCH bonus + your share';
-}
-
-function shareCaption() {
-  return userShareIsDust ? 'under 546 sats — carries over to the next round' : 'your proportional share only';
-}
+const FINDER_CAPTION = '1 BCH bonus + your share';
+const SHARE_CAPTION  = 'your proportional share only';
 
 function updatePayoutUsd(price) {
   if (price == null) return;
   const fmt = bch => '$' + (bch * price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   if (userPayoutFinder != null)
-    document.getElementById('user-payout-finder-usd').innerHTML = fmt(userPayoutFinder) + '<br>' + finderCaption();
+    document.getElementById('user-payout-finder-usd').innerHTML = fmt(userPayoutFinder) + '<br>' + FINDER_CAPTION;
   if (userPayoutShare != null)
-    document.getElementById('user-payout-share-usd').innerHTML = userShareIsDust
-      ? shareCaption()
-      : fmt(userPayoutShare) + '<br>' + shareCaption();
+    document.getElementById('user-payout-share-usd').innerHTML = fmt(userPayoutShare) + '<br>' + SHARE_CAPTION;
 }
 
 async function doLookup() {
@@ -372,9 +353,8 @@ async function doLookup() {
   document.getElementById('user-workers-card').classList.add('hidden');
   userPayoutFinder = null;
   userPayoutShare  = null;
-  userShareIsDust  = false;
-  document.getElementById('user-payout-finder-usd').textContent = finderCaption();
-  document.getElementById('user-payout-share-usd').textContent  = shareCaption();
+  document.getElementById('user-payout-finder-usd').textContent = FINDER_CAPTION;
+  document.getElementById('user-payout-share-usd').textContent  = SHARE_CAPTION;
   ['user-chance-day','user-chance-week','user-chance-month'].forEach(id => {
     const el = document.getElementById(id);
     el.textContent = '—';
@@ -431,20 +411,10 @@ async function doLookup() {
       userPayoutFinder = base + FINDER_BONUS;
       userPayoutShare  = base;
 
-      // Prefer the pool's actual payout-cutoff membership (rank-based, not a
-      // flat dust amount) over our own estimate; fall back to the dust
-      // estimate only if this address isn't listed in either group.
-      const work = await getPoolWork();
-      const addrKey = stripCashAddrPrefix(addr);
-      const inPayouts   = work && Object.keys(work.payouts   ?? {}).some(k => stripCashAddrPrefix(k) === addrKey);
-      const inPostponed = work && Object.keys(work.postponed ?? {}).some(k => stripCashAddrPrefix(k) === addrKey);
-      userShareIsDust = inPostponed ? true : inPayouts ? false : base < DUST_BCH;
       document.getElementById('user-payout-finder').textContent = userPayoutFinder.toFixed(6) + ' BCH';
-      document.getElementById('user-payout-share').innerHTML = userShareIsDust
-        ? `${formatSats(base)} <span class="bs-postponed-tag">Postponed</span> <span class="info-tip" data-tip="${DUST_TIP}">i</span>`
-        : userPayoutShare.toFixed(6) + ' BCH';
-      document.getElementById('user-payout-finder-usd').textContent = finderCaption();
-      document.getElementById('user-payout-share-usd').textContent  = shareCaption();
+      document.getElementById('user-payout-share').textContent  = userPayoutShare.toFixed(6) + ' BCH';
+      document.getElementById('user-payout-finder-usd').textContent = FINDER_CAPTION;
+      document.getElementById('user-payout-share-usd').textContent  = SHARE_CAPTION;
       payoutGrid.classList.remove('hidden');
       document.getElementById('user-payout-note').classList.remove('hidden');
     } else {
@@ -643,10 +613,7 @@ async function loadBestShares() {
 
     const statusText = await statusResp.text();
 
-    const addrGroup = new Map();
-    Object.keys(work.payouts ?? {}).forEach(a => addrGroup.set(a, 'payouts'));
-    Object.keys(work.postponed ?? {}).forEach(a => { if (!addrGroup.has(a)) addrGroup.set(a, 'postponed'); });
-    const addresses = [...addrGroup.keys()];
+    const addresses = Object.keys(work.payouts ?? {});
 
     const pool = {};
     statusText.trim().split('\n').forEach(line => {
@@ -696,9 +663,7 @@ async function loadBestShares() {
       let payoutStr = '—';
       if (r.userLns != null && poolLns != null && poolLns > 0) {
         const base = (BLOCK_REWARD - 1) * 0.99 * (r.userLns / poolLns);
-        payoutStr = r.group === 'postponed'
-          ? `${formatSats(base)} <span class="bs-postponed-tag">Postponed</span> <span class="info-tip" data-tip="${DUST_TIP}">i</span>`
-          : base.toFixed(8) + ' BCH';
+        payoutStr = base.toFixed(8) + ' BCH';
       }
       return `<tr>
         <td>${rank}</td>
@@ -736,10 +701,7 @@ async function loadBestShares() {
         .slice(0, 3)
         .map(r => r.address);
 
-      const loadedPayout    = sortRows(loaded.filter(r => r.group === 'payouts'));
-      const loadedPostponed = sortRows(loaded.filter(r => r.group === 'postponed'));
-      const pendingPayout    = pending.filter(a => addrGroup.get(a) === 'payouts');
-      const pendingPostponed = pending.filter(a => addrGroup.get(a) === 'postponed');
+      const sortedLoaded = sortRows(loaded);
 
       table.querySelectorAll('th[data-sort]').forEach(th => {
         const active = th.dataset.sort === sortCol;
@@ -749,16 +711,8 @@ async function loadBestShares() {
 
       let rank = 1;
       let html = '';
-      html += loadedPayout.map(r => renderRow(r, rank++, top3)).join('');
-      html += pendingPayout.map(a => renderPendingRow(a, rank++)).join('');
-
-      if (loadedPostponed.length + pendingPostponed.length > 0) {
-        html += `<tr class="bs-cutoff-row"><td colspan="7">
-          <span class="bs-cutoff-label">⏳ Payout cutoff — shares below pay out under 546 sats, so they're postponed and carried over to the next round</span>
-        </td></tr>`;
-        html += loadedPostponed.map(r => renderRow(r, rank++, top3)).join('');
-        html += pendingPostponed.map(a => renderPendingRow(a, rank++)).join('');
-      }
+      html += sortedLoaded.map(r => renderRow(r, rank++, top3)).join('');
+      html += pending.map(a => renderPendingRow(a, rank++)).join('');
 
       table.querySelector('tbody').innerHTML = html;
     }
@@ -802,8 +756,7 @@ async function loadBestShares() {
             address:    addr,
             bestshare:  data.bestshare,
             hashrate1m: data.hashrate1m ?? null,
-            userLns:    data.herp ?? data.lns ?? data.shares ?? null,
-            group:      addrGroup.get(addr)
+            userLns:    data.herp ?? data.lns ?? data.shares ?? null
           } : null);
           renderBestSharesBody();
         })

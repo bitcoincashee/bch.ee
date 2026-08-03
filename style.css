@@ -942,10 +942,8 @@ code.connect-value {
 
 .bs-pending { color: var(--muted); opacity: .4; }
 
-/* Fixed layout + explicit column widths keep the long cutoff-row message
-   from forcing the whole table (and its wrapper) wider than the card —
-   table-layout:auto sizes columns to fit unwrapped content, which blows
-   out a colspan cell's text no matter what white-space/overflow it's given. */
+/* Fixed layout + explicit column widths keep the wrapped address column
+   from forcing the whole table (and its wrapper) wider than the card. */
 #bestshares-table { table-layout: fixed; }
 #bestshares-table thead th:nth-child(1) { width: 7%; }
 #bestshares-table thead th:nth-child(2) { width: 25%; }
@@ -978,29 +976,6 @@ code.connect-value {
   overflow: visible;
   text-overflow: clip;
   max-width: none;
-}
-
-#bestshares-table .bs-cutoff-row td {
-  padding: .55rem .75rem;
-  border-bottom: 1px dashed var(--border);
-  background: rgba(240, 180, 41, 0.04);
-  text-align: center;
-  white-space: normal;
-  font-family: 'Ubuntu', sans-serif;
-  color: var(--muted);
-  max-width: none;
-  overflow: visible;
-  text-overflow: clip;
-}
-.bs-cutoff-label {
-  color: var(--muted);
-  font-size: .75rem;
-  letter-spacing: .02em;
-}
-.bs-postponed-tag {
-  color: var(--muted);
-  font-size: .8rem;
-  font-style: italic;
 }
 
 .sort-th { cursor: pointer; user-select: none; transition: color .15s; }
