@@ -21,7 +21,7 @@ document.querySelectorAll('.disclaimer-placeholder').forEach(el => {
   el.innerHTML = DISCLAIMER_HTML;
 });
 
-// ── pool.work (payouts/postponed membership for this round) ─
+// ── pool.work (payout membership for this round) ─
 
 let poolWorkCache   = null;
 let poolWorkPromise = null;
@@ -281,6 +281,7 @@ async function loadDailyLuck(poolHps) {
         priceEl.textContent = '$' + d.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         priceEl.classList.remove('skeleton');
       }
+      renderPayoutBreakdown();
     }
 
     if (d.networkHashrate != null) {
@@ -295,6 +296,51 @@ async function loadDailyLuck(poolHps) {
 loadPoolStats();
 // Refresh every 30 seconds
 setInterval(loadPoolStats, 30_000);
+
+// ── Payout breakdown (How Each Block Pays Out) ────────────
+
+// BCH has 8 decimal places (satoshis) — show full precision but drop trailing zeros
+function formatBch(n) {
+  if (n == null || isNaN(n)) return '—';
+  return n.toFixed(8).replace(/0+$/, '').replace(/\.$/, '') + ' BCH';
+}
+
+// bchPrice is null for tBCH (no real-world price) — omit the USD suffix entirely then
+function formatUsdSuffix(bch) {
+  if (bchPrice == null || bch == null || isNaN(bch)) return '';
+  return ' ($' + (bch * bchPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ')';
+}
+
+let payoutAmounts = null; // { finderBonus, minersTotal, fee } once loaded
+
+function renderPayoutBreakdown() {
+  if (!payoutAmounts) return;
+  const { finderBonus, minersTotal, fee } = payoutAmounts;
+  const finderUsdEl = document.getElementById('payout-finder-usd');
+  const minersUsdEl = document.getElementById('payout-miners-usd');
+  const feeUsdEl    = document.getElementById('payout-fee-usd');
+  if (finderUsdEl) finderUsdEl.textContent = formatUsdSuffix(finderBonus);
+  if (minersUsdEl) minersUsdEl.textContent = formatUsdSuffix(minersTotal);
+  if (feeUsdEl)    feeUsdEl.textContent    = formatUsdSuffix(fee);
+}
+
+async function loadPayoutBreakdown() {
+  const work = await getPoolWork();
+  if (!work) return;
+
+  const minersEl = document.getElementById('payout-miners-amount');
+  const feeEl    = document.getElementById('payout-fee-amount');
+
+  const minersTotal = Object.values(work.payouts ?? {}).reduce((a, b) => a + b, 0);
+  if (minersEl) minersEl.textContent = formatBch(minersTotal);
+
+  if (feeEl) feeEl.textContent = formatBch(work.fee);
+
+  payoutAmounts = { finderBonus: work.finder_bonus ?? 1, minersTotal, fee: work.fee };
+  renderPayoutBreakdown();
+}
+
+loadPayoutBreakdown();
 
 // ── My Stats ──────────────────────────────────────────
 

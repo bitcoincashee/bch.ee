@@ -153,12 +153,12 @@
           <div class="info-icon">🏆</div>
           <div class="info-title">How Each Block Pays Out</div>
           <div class="info-desc">
+            Every payment is made directly in the block's coinbase — fully trustless, with no ongoing bookkeeping.
             <ol class="payout-order">
-              <li><span class="payout-amount">1 BCH</span> bonus to whoever finds the block, paid directly in the block's coinbase</li>
-              <li><span class="payout-amount">99%</span> of remaining reward split among all miners by shares — no minimum, even 1 sat is paid</li>
-              <li><span class="payout-amount">1%</span> pool fee on remaining reward</li>
+              <li><span class="payout-amount">1 BCH</span><span id="payout-finder-usd"></span> to the block finder</li>
+              <li><span class="payout-amount">99%</span> of the rest — currently <strong id="payout-miners-amount">—</strong><span id="payout-miners-usd"></span> — to miners, proportionally by work done</li>
+              <li><span class="payout-amount">1%</span> of the rest — currently <strong id="payout-fee-amount">—</strong><span id="payout-fee-usd"></span> — as the pool fee, effectively <strong>~0.7%</strong> since the finder bonus is fee-free</li>
             </ol>
-            <span class="reward-note">The block finder receives both the 1 BCH bonus and their proportional share of the remaining 99%, all in the same coinbase transaction — fully trustless, with no ongoing bookkeeping.</span>
           </div>
         </div>
         <div class="card info-card">

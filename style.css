@@ -326,14 +326,6 @@ main.container {
   font-size: .75em;
 }
 
-.reward-note {
-  display: block;
-  margin-top: .65rem;
-  font-size: .8rem;
-  color: var(--muted);
-  font-style: italic;
-}
-
 /* ── Connect Card ── */
 
 .connect-card { display: flex; flex-direction: column; gap: .75rem; }
