@@ -92,11 +92,31 @@ let userPayoutShare  = null;  // BCH payout if someone else finds block
 let bchPrice         = null;  // BCH price in USD
 let blocksLoaded     = false;
 let bestSharesLoaded = false;
+const BLOCKS_PAGE_SIZE = 10;
+let allBlockEntries   = null; // newest-first, populated once per page load
+let currentBlocksPage = 1;
+let lastLookupAddr    = null; // guards against routeFromHash() re-triggering doLookup()
+
+// addrInput/lookupBtn/FINDER_CAPTION/SHARE_CAPTION are declared here (ahead
+// of where they'd naturally sit further down) because routeFromHash() below
+// runs synchronously at script load and — via a "#mystats/<address>" deep
+// link — can call doLookup(), which reads all four. Declaring them later
+// left them in their temporal dead zone at that point, throwing a
+// ReferenceError.
+const lookupBtn = document.getElementById('lookup-btn');
+const addrInput = document.getElementById('address-input');
+const FINDER_CAPTION = '1 BCH bonus + your share';
+const SHARE_CAPTION  = 'your proportional share only';
 
 // ── Navigation ──────────────────────────────────────────
 
 const navBtns = document.querySelectorAll('.nav-btn');
 const sections = document.querySelectorAll('.section');
+const VALID_SECTIONS = ['home', 'connect', 'mystats', 'blocks', 'bestshares', 'faq'];
+
+// Set by routeFromHash() when a "blocks/<n>" deep link is opened before the
+// block list has loaded; loadBlocks() consumes it once entries are fetched.
+let pendingBlocksPage = null;
 
 function showSection(id) {
   sections.forEach(s => s.classList.toggle('active', s.id === id));
@@ -105,15 +125,45 @@ function showSection(id) {
   if (id === 'bestshares') loadBestShares();
 }
 
+// Navigating always goes through the URL hash, so the current section (and,
+// for Blocks, the current page) is always copyable and survives a reload.
+// Setting the same hash again wouldn't fire 'hashchange', so show directly.
+function navigateTo(id) {
+  const current = location.hash.replace('#', '').split('/')[0] || 'home';
+  if (current === id) showSection(id);
+  else location.hash = id;
+}
+
 navBtns.forEach(btn => {
-  btn.addEventListener('click', () => showSection(btn.dataset.section));
+  btn.addEventListener('click', () => navigateTo(btn.dataset.section));
 });
 
-// Handle hash-based navigation
+// Handle hash-based navigation — also supports "blocks/<page>" deep links
 function routeFromHash() {
-  const hash = location.hash.replace('#', '') || 'home';
-  const valid = ['home', 'connect', 'mystats', 'blocks', 'bestshares', 'faq'];
-  showSection(valid.includes(hash) ? hash : 'home');
+  const raw = location.hash.replace('#', '') || 'home';
+  const [id, rest] = raw.split('/');
+  const section = VALID_SECTIONS.includes(id) ? id : 'home';
+
+  if (section === 'blocks' && rest) {
+    const page = parseInt(rest, 10);
+    if (page > 0) {
+      if (allBlockEntries) { currentBlocksPage = page; renderBlocksPage(); }
+      else pendingBlocksPage = page;
+    }
+  }
+
+  // "#mystats/<address>" deep-links straight into a lookup. Using
+  // getElementById here (instead of the addrInput const) since this can run
+  // before that const's declaration further down the file has executed.
+  if (section === 'mystats' && rest) {
+    const addr = decodeURIComponent(rest);
+    if (addr && addr !== lastLookupAddr) {
+      document.getElementById('address-input').value = addr;
+      doLookup();
+    }
+  }
+
+  showSection(section);
 }
 window.addEventListener('hashchange', routeFromHash);
 routeFromHash();
@@ -133,7 +183,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 
 // FAQ internal nav buttons
 document.querySelectorAll('.faq-link-btn').forEach(btn => {
-  btn.addEventListener('click', () => showSection(btn.dataset.section));
+  btn.addEventListener('click', () => navigateTo(btn.dataset.section));
 });
 
 // Make Bitaxe / Avalon / NiceHash inputs selectable for easy copy
@@ -349,15 +399,12 @@ loadPayoutBreakdown();
 
 // ── My Stats ──────────────────────────────────────────
 
-const lookupBtn  = document.getElementById('lookup-btn');
-const addrInput  = document.getElementById('address-input');
-
 lookupBtn.addEventListener('click', doLookup);
 addrInput.addEventListener('keydown', e => { if (e.key === 'Enter') doLookup(); });
 
 function goToMyStats(address) {
   addrInput.value = address;
-  showSection('mystats');
+  navigateTo('mystats');
   doLookup();
 }
 
@@ -365,17 +412,22 @@ function relativeTime(ts) {
   if (!ts) return '—';
   const diff = Math.floor((Date.now() / 1000) - ts);
   if (diff < 0) return 'just now';
-  const d = Math.floor(diff / 86400);
-  const h = Math.floor((diff % 86400) / 3600);
-  const m = Math.floor((diff % 3600) / 60);
-  if (d > 0) return `${d} ${d === 1 ? 'day' : 'days'} ago`;
-  if (h > 0) return `${h} ${h === 1 ? 'hour' : 'hours'} ago`;
-  if (m > 0) return `${m} ${m === 1 ? 'minute' : 'minutes'} ago`;
+  const units = [
+    ['year',   31536000],
+    ['month',  2592000],
+    ['week',   604800],
+    ['day',    86400],
+    ['hour',   3600],
+    ['minute', 60],
+  ];
+  for (const [label, secs] of units) {
+    if (diff >= secs) {
+      const n = Math.floor(diff / secs);
+      return `${n} ${label}${n === 1 ? '' : 's'} ago`;
+    }
+  }
   return 'Now';
 }
-
-const FINDER_CAPTION = '1 BCH bonus + your share';
-const SHARE_CAPTION  = 'your proportional share only';
 
 function updatePayoutUsd(price) {
   if (price == null) return;
@@ -389,6 +441,12 @@ function updatePayoutUsd(price) {
 async function doLookup() {
   const addr = addrInput.value.trim();
   if (!addr) { addrInput.focus(); return; }
+
+  // Reflect the address in the URL immediately (not just on success) so the
+  // link is shareable, and record it before any await so a routeFromHash()
+  // triggered by the navigateTo() just before this call doesn't re-fire it.
+  lastLookupAddr = addr;
+  history.replaceState(null, '', `#mystats/${encodeURIComponent(addr)}`);
 
   const banner  = document.getElementById('user-status-banner');
   const grid    = document.getElementById('user-stats-grid');
@@ -548,12 +606,100 @@ async function loadUserChance(hashrateStr) {
 
 // ── Blocks ──────────────────────────────────────────────
 
+function buildBlockRow(b) {
+  const hash      = b.hash   ?? null;
+  const height    = b.height ?? null;
+  const when      = b.time ?? b.createdate ?? b.timestamp;
+  const finder    = b.finder_address ?? b.solvedby ?? '';
+  const confirmed = b.confirmed;
+
+  // Link the row to its BCH Explorer page when we have an id to point at
+  const explorerId = height ?? hash;
+  const row = document.createElement(explorerId ? 'a' : 'div');
+  row.className = 'block-row';
+  if (explorerId) {
+    row.href = `${EXPLORER_BLOCK_URL}/${explorerId}`;
+    row.target = '_blank';
+    row.rel = 'noopener';
+  }
+
+  const left = document.createElement('div');
+  const heightEl = document.createElement('div');
+  heightEl.className = 'block-height';
+  heightEl.textContent = 'Block #' + (height ?? '—');
+  const hashEl = document.createElement('div');
+  hashEl.className = 'block-hash';
+  hashEl.textContent = hash ?? '—';
+  left.appendChild(heightEl);
+  left.appendChild(hashEl);
+  if (finder) {
+    const finderEl = document.createElement('div');
+    finderEl.className = 'block-meta';
+    finderEl.style.marginTop = '.3rem';
+    finderEl.textContent = '⛏ ' + finder;
+    left.appendChild(finderEl);
+  }
+
+  const right = document.createElement('div');
+  right.style.textAlign = 'right';
+  const statusEl = document.createElement('div');
+  statusEl.className = 'block-status' + (confirmed ? ' confirmed' : '');
+  statusEl.textContent = confirmed ? 'Confirmed' : 'Unconfirmed';
+  const whenEl = document.createElement('div');
+  whenEl.className = 'block-meta';
+  whenEl.style.marginTop = '.3rem';
+  whenEl.textContent = when ? `${new Date(when * 1000).toLocaleString()} (${relativeTime(when)})` : '';
+  right.appendChild(statusEl);
+  right.appendChild(whenEl);
+
+  row.appendChild(left);
+  row.appendChild(right);
+  return row;
+}
+
+async function renderBlocksPage() {
+  const list       = document.getElementById('blocks-list');
+  const pagination = document.getElementById('blocks-pagination');
+  const pageInfo   = document.getElementById('blocks-page-info');
+  const prevBtn    = document.getElementById('blocks-prev-btn');
+  const nextBtn    = document.getElementById('blocks-next-btn');
+
+  const totalPages = Math.max(1, Math.ceil(allBlockEntries.length / BLOCKS_PAGE_SIZE));
+  currentBlocksPage = Math.min(Math.max(1, currentBlocksPage), totalPages);
+
+  const start = (currentBlocksPage - 1) * BLOCKS_PAGE_SIZE;
+  const pageEntries = allBlockEntries.slice(start, start + BLOCKS_PAGE_SIZE);
+
+  list.innerHTML = '<div class="card text-center">Loading page…</div>';
+  const details = await Promise.all(pageEntries.map(getBlockDetails));
+
+  list.innerHTML = '';
+  details.forEach(b => list.appendChild(buildBlockRow(b)));
+
+  pageInfo.textContent = `Page ${currentBlocksPage} of ${totalPages}`;
+  prevBtn.disabled = currentBlocksPage <= 1;
+  nextBtn.disabled = currentBlocksPage >= totalPages;
+  pagination.classList.toggle('hidden', totalPages <= 1);
+
+  // Keep the URL copyable/reloadable without spamming browser history —
+  // one entry per pagination click would make Back nearly unusable.
+  history.replaceState(null, '', `#blocks/${currentBlocksPage}`);
+}
+
+document.getElementById('blocks-prev-btn').addEventListener('click', () => {
+  currentBlocksPage -= 1;
+  renderBlocksPage();
+});
+document.getElementById('blocks-next-btn').addEventListener('click', () => {
+  currentBlocksPage += 1;
+  renderBlocksPage();
+});
+
 async function loadBlocks() {
   if (blocksLoaded) return;
 
   const banner  = document.getElementById('blocks-status-banner');
   const loading = document.getElementById('blocks-loading');
-  const list    = document.getElementById('blocks-list');
   const empty   = document.getElementById('blocks-empty');
 
   // Reset UI in case this is a retry after a previous failed attempt
@@ -575,60 +721,12 @@ async function loadBlocks() {
       return;
     }
 
-    const details = await Promise.all(entries.map(getBlockDetails));
+    allBlockEntries = entries.slice().reverse(); // newest first
+    currentBlocksPage = pendingBlocksPage ?? 1;
+    pendingBlocksPage = null;
 
     loading.classList.add('hidden');
-    list.innerHTML = '';
-    details.slice().reverse().forEach(b => {
-      const hash      = b.hash   ?? null;
-      const height    = b.height ?? null;
-      const when      = b.time ?? b.createdate ?? b.timestamp;
-      const finder    = b.finder_address ?? b.solvedby ?? '';
-      const confirmed = b.confirmed;
-
-      // Link the row to its BCH Explorer page when we have an id to point at
-      const explorerId = height ?? hash;
-      const row = document.createElement(explorerId ? 'a' : 'div');
-      row.className = 'block-row';
-      if (explorerId) {
-        row.href = `${EXPLORER_BLOCK_URL}/${explorerId}`;
-        row.target = '_blank';
-        row.rel = 'noopener';
-      }
-
-      const left = document.createElement('div');
-      const heightEl = document.createElement('div');
-      heightEl.className = 'block-height';
-      heightEl.textContent = 'Block #' + (height ?? '—');
-      const hashEl = document.createElement('div');
-      hashEl.className = 'block-hash';
-      hashEl.textContent = hash ?? '—';
-      left.appendChild(heightEl);
-      left.appendChild(hashEl);
-      if (finder) {
-        const finderEl = document.createElement('div');
-        finderEl.className = 'block-meta';
-        finderEl.style.marginTop = '.3rem';
-        finderEl.textContent = '⛏ ' + finder;
-        left.appendChild(finderEl);
-      }
-
-      const right = document.createElement('div');
-      right.style.textAlign = 'right';
-      const statusEl = document.createElement('div');
-      statusEl.className = 'block-status' + (confirmed ? ' confirmed' : '');
-      statusEl.textContent = confirmed ? 'Confirmed' : 'Unconfirmed';
-      const whenEl = document.createElement('div');
-      whenEl.className = 'block-meta';
-      whenEl.style.marginTop = '.3rem';
-      whenEl.textContent = when ? new Date(when * 1000).toLocaleString() : '';
-      right.appendChild(statusEl);
-      right.appendChild(whenEl);
-
-      row.appendChild(left);
-      row.appendChild(right);
-      list.appendChild(row);
-    });
+    await renderBlocksPage();
 
     blocksLoaded = true;
 

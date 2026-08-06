@@ -822,6 +822,30 @@ code.connect-value {
   color: var(--accent);
 }
 
+.blocks-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.page-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: 'Ubuntu', sans-serif;
+  font-size: .85rem;
+  padding: .45rem 1rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: color .2s, border-color .2s;
+}
+.page-btn:hover:not(:disabled) { color: var(--accent); border-color: var(--accent); }
+.page-btn:disabled { opacity: .35; cursor: default; }
+
+.page-info { color: var(--muted); font-size: .85rem; }
+
 /* ── Utilities ── */
 
 .hidden { display: none !important; }
