@@ -14,6 +14,7 @@
   --muted:       #7d8590;
   --yellow:      #f0b429;
   --yellow-bg:   rgba(240, 180, 41, 0.15);
+  --block:       #58a6ff;
   --radius:      12px;
   --radius-sm:   8px;
   --blur:        blur(12px);
@@ -862,6 +863,28 @@ code.connect-value {
   background: var(--bg-card);
 }
 
+.chart-card.fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  margin: 0;
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.chart-card.fullscreen .chart-wrap {
+  flex: 1 1 auto;
+  height: auto;
+}
+
+body.chart-fullscreen-lock {
+  overflow: hidden;
+}
+
 .chart-header {
   display: flex;
   align-items: baseline;
@@ -885,10 +908,37 @@ code.connect-value {
 
 .chart-legend {
   display: flex;
+  align-items: center;
   gap: 1rem;
   font-size: .78rem;
   color: var(--muted);
 }
+
+.chart-fullscreen-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  cursor: pointer;
+  transition: color .2s, border-color .2s, background .2s;
+}
+
+.chart-fullscreen-btn:hover,
+.chart-fullscreen-btn.active {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.chart-fullscreen-btn .icon-compress { display: none; }
+.chart-fullscreen-btn.active .icon-expand { display: none; }
+.chart-fullscreen-btn.active .icon-compress { display: block; }
 
 .legend-item {
   display: inline-flex;
@@ -905,6 +955,7 @@ code.connect-value {
 
 .legend-hashrate { background: var(--accent); }
 .legend-workers  { background: var(--yellow); }
+.legend-blocks   { background: var(--block); border-radius: 50%; }
 
 .chart-wrap {
   position: relative;
@@ -937,6 +988,10 @@ code.connect-value {
 .chart-svg .workers-line  { fill: none; stroke: var(--yellow); stroke-width: 1.5; stroke-dasharray: 4 3; stroke-linejoin: round; stroke-linecap: round; }
 .chart-svg .hashrate-area { stroke-linejoin: round; }
 .chart-svg .crosshair     { stroke: var(--border); stroke-width: 1; }
+.chart-svg .block-line    { stroke: var(--block); stroke-opacity: .3; stroke-width: 1; }
+.chart-svg .block-dot     { fill: var(--block); stroke: var(--bg); stroke-width: 1; cursor: pointer; }
+.chart-svg .block-dot.unconfirmed { fill: var(--bg); stroke: var(--block); stroke-width: 1.5; }
+.chart-svg .block-label   { fill: var(--block); font-size: 8px; font-family: 'Ubuntu', sans-serif; }
 .chart-svg .dot-hashrate  { fill: var(--accent); }
 .chart-svg .dot-workers   { fill: var(--yellow); }
 
@@ -1349,6 +1404,9 @@ code.connect-value {
 
   .connect-row { flex-direction: column; gap: .25rem; }
   .connect-label { min-width: unset; }
+
+  .chart-wrap { height: 170px; }
+  .chart-fullscreen-btn { display: none; }
 
   .footer-inner { flex-direction: column; align-items: center; }
 }
