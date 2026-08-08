@@ -92,6 +92,22 @@
           <p>The node is still syncing. Stats will appear here shortly — check back in a few minutes.</p>
         </div>
       </div>
+
+      <div class="card chart-card">
+        <div class="chart-header">
+          <div class="chart-title">Hashrate &amp; Workers <span id="chart-window" class="chart-window"></span></div>
+          <div class="chart-legend">
+            <span class="legend-item"><span class="legend-swatch legend-hashrate"></span>Hashrate</span>
+            <span class="legend-item"><span class="legend-swatch legend-workers"></span>Workers</span>
+          </div>
+        </div>
+        <div id="pool-chart-wrap" class="chart-wrap">
+          <div id="pool-chart-message" class="chart-message">Loading chart…</div>
+          <svg id="pool-chart-svg" class="chart-svg hidden" viewBox="0 0 600 220" preserveAspectRatio="none"></svg>
+          <div id="pool-chart-tooltip" class="chart-tooltip hidden"></div>
+        </div>
+      </div>
+
       <div class="card-grid" id="stats-grid">
         <div class="card stat-card" id="stat-hashrate">
           <div class="stat-label">Pool Hashrate</div>

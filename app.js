@@ -4,6 +4,7 @@
 
 const API_BASE = 'https://para.bch.ee';
 const EXPLORER_BLOCK_URL = 'https://bchexplorer.cash/block';
+const CHART_URL = 'https://poolstats.solochance.org/para-bch.json';
 
 // ── Disclaimer ───────────────────────────────────────────
 
@@ -118,11 +119,21 @@ const VALID_SECTIONS = ['home', 'connect', 'mystats', 'blocks', 'bestshares', 'f
 // block list has loaded; loadBlocks() consumes it once entries are fetched.
 let pendingBlocksPage = null;
 
+// Reassigned once the chart module below finishes initializing. showSection()
+// runs synchronously during the initial routeFromHash() call, which happens
+// before that module's `let`/`const` declarations further down the script
+// have executed — referencing them here directly would throw (temporal dead
+// zone) and abort the rest of the script. This indirection stays a no-op
+// until the chart module is ready, then does the real re-render on later
+// (post-load) navigations back to Home.
+let refreshPoolChartOnShow = () => {};
+
 function showSection(id) {
   sections.forEach(s => s.classList.toggle('active', s.id === id));
   navBtns.forEach(b => b.classList.toggle('active', b.dataset.section === id));
   if (id === 'blocks') loadBlocks();
   if (id === 'bestshares') loadBestShares();
+  if (id === 'home') refreshPoolChartOnShow();
 }
 
 // Navigating always goes through the URL hash, so the current section (and,
@@ -346,6 +357,241 @@ async function loadDailyLuck(poolHps) {
 loadPoolStats();
 // Refresh every 30 seconds
 setInterval(loadPoolStats, 30_000);
+
+// ── Hashrate & Workers chart ──────────────────────────────
+
+const chartSvg      = document.getElementById('pool-chart-svg');
+const chartMessage  = document.getElementById('pool-chart-message');
+const chartTooltip  = document.getElementById('pool-chart-tooltip');
+const chartWrap     = document.getElementById('pool-chart-wrap');
+const chartWindowEl = document.getElementById('chart-window');
+
+const CHART_PAD = { top: 12, right: 46, bottom: 22, left: 50 };
+
+let chartPoints = []; // [{ t: ms, hashrate: hps, workers: n }], oldest first
+
+function svgEl(tag, attrs) {
+  const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for (const k in attrs) el.setAttribute(k, attrs[k]);
+  return el;
+}
+
+// Quadratic-through-midpoints spline: each real point becomes a curve
+// control point, and the curve passes through the midpoint between each
+// consecutive pair. Stays close to the real data (unlike Catmull-Rom, it
+// never overshoots on sharp jumps) while rounding off the pointy vertices
+// a plain polyline would have at every sample.
+function smoothPath(pts) {
+  if (pts.length < 3) {
+    return 'M' + pts.map(([x, y]) => `${x},${y}`).join(' L ');
+  }
+  let d = `M ${pts[0][0]},${pts[0][1]}`;
+  for (let i = 1; i < pts.length - 1; i++) {
+    const [cx, cy] = pts[i];
+    const [nx, ny] = pts[i + 1];
+    const mx = (cx + nx) / 2;
+    const my = (cy + ny) / 2;
+    d += ` Q ${cx},${cy} ${mx},${my}`;
+  }
+  const [lx, ly] = pts[pts.length - 1];
+  d += ` L ${lx},${ly}`;
+  return d;
+}
+
+function formatSpan(ms) {
+  const totalMin = Math.max(1, Math.round(ms / 60_000));
+  if (totalMin < 60) return `${totalMin}m`;
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  return m ? `${h}h ${m}m` : `${h}h`;
+}
+
+async function loadPoolChart() {
+  try {
+    const resp = await fetch(CHART_URL, { cache: 'no-cache' });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+
+    chartPoints = (data.points ?? [])
+      .map(p => ({
+        t: Date.parse(p.capturedAt),
+        hashrate: p.hashrate1mHashesPerSec ?? hashrateToHps(p.hashrate1mRaw),
+        workers: p.workers ?? 0,
+      }))
+      .filter(p => !isNaN(p.t))
+      .sort((a, b) => a.t - b.t);
+
+    renderPoolChart();
+  } catch (e) {
+    console.warn('Pool chart unavailable:', e.message);
+    if (!chartPoints.length) {
+      chartSvg.classList.add('hidden');
+      chartMessage.classList.remove('hidden');
+      chartMessage.textContent = 'Chart unavailable right now.';
+    }
+  }
+}
+
+function renderPoolChart() {
+  if (chartPoints.length < 2) {
+    chartSvg.classList.add('hidden');
+    chartMessage.classList.remove('hidden');
+    chartMessage.textContent = chartPoints.length
+      ? 'Gathering data — check back in a few minutes.'
+      : 'No data yet — check back in a few minutes.';
+    chartWindowEl.textContent = '';
+    return;
+  }
+
+  chartMessage.classList.add('hidden');
+  chartSvg.classList.remove('hidden');
+  chartSvg.innerHTML = '';
+
+  // Match the viewBox to the SVG's actual rendered pixel size so 1 viewBox
+  // unit == 1 CSS pixel. Without this, the viewBox aspect ratio (fixed)
+  // rarely matches the rendered box's aspect ratio (which varies by screen
+  // width), and preserveAspectRatio="none" then scales x and y by different
+  // factors — stretching every shape non-uniformly, including <text> glyphs,
+  // which is what made axis labels look flattened/squished.
+  const rectNow = chartSvg.getBoundingClientRect();
+  const vbW = Math.max(Math.round(rectNow.width), 300);
+  const vbH = Math.max(Math.round(rectNow.height), 100);
+  chartSvg.setAttribute('viewBox', `0 0 ${vbW} ${vbH}`);
+
+  const { top, right, bottom, left } = CHART_PAD;
+  const plotW = vbW - left - right;
+  const plotH = vbH - top - bottom;
+
+  const tMin = chartPoints[0].t;
+  const tMax = chartPoints[chartPoints.length - 1].t;
+  const tSpan = Math.max(tMax - tMin, 1);
+  chartWindowEl.textContent = `(last ${formatSpan(tSpan)})`;
+
+  const hrMax = Math.max(...chartPoints.map(p => p.hashrate), 1) * 1.15;
+  const wMax  = Math.max(...chartPoints.map(p => p.workers), 1) * 1.3;
+
+  const xPos  = t => left + ((t - tMin) / tSpan) * plotW;
+  const yHr   = h => top + plotH - (h / hrMax) * plotH;
+  const yW    = w => top + plotH - (w / wMax) * plotH;
+
+  // Grid lines + axis labels (3 horizontal bands)
+  for (let i = 0; i <= 2; i++) {
+    const frac = i / 2;
+    const yy = top + plotH * frac;
+    chartSvg.appendChild(svgEl('line', {
+      class: 'grid-line', x1: left, x2: left + plotW, y1: yy, y2: yy,
+    }));
+    chartSvg.appendChild(svgEl('text', {
+      class: 'axis-label', x: left - 6, y: yy + 3, 'text-anchor': 'end',
+    })).textContent = formatHashrate(hrMax * (1 - frac));
+    chartSvg.appendChild(svgEl('text', {
+      class: 'axis-label', x: left + plotW + 6, y: yy + 3, 'text-anchor': 'start',
+    })).textContent = Math.round(wMax * (1 - frac));
+  }
+
+  // X-axis time labels (start / mid / end)
+  [0, 0.5, 1].forEach(frac => {
+    const t = tMin + tSpan * frac;
+    chartSvg.appendChild(svgEl('text', {
+      class: 'axis-label', x: xPos(t), y: vbH - 6,
+      'text-anchor': frac === 0 ? 'start' : frac === 1 ? 'end' : 'middle',
+    })).textContent = new Date(t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  });
+
+  // Hashrate area + line
+  const hrPts = chartPoints.map(p => [xPos(p.t), yHr(p.hashrate)]);
+  const hrLineD = smoothPath(hrPts);
+  const areaD = `${hrLineD} L ${left + plotW},${top + plotH} L ${left},${top + plotH} Z`;
+  chartSvg.appendChild(svgEl('path', { class: 'hashrate-area', d: areaD }));
+  chartSvg.appendChild(svgEl('path', { class: 'hashrate-line', d: hrLineD }));
+
+  // Workers line
+  const wPts = chartPoints.map(p => [xPos(p.t), yW(p.workers)]);
+  chartSvg.appendChild(svgEl('path', { class: 'workers-line', d: smoothPath(wPts) }));
+
+  // Interactive crosshair + tooltip
+  const crosshair = svgEl('line', { class: 'crosshair', x1: 0, x2: 0, y1: top, y2: top + plotH, opacity: 0 });
+  const dotHr = svgEl('circle', { class: 'dot-hashrate', r: 3.5, opacity: 0 });
+  const dotW  = svgEl('circle', { class: 'dot-workers', r: 3, opacity: 0 });
+  chartSvg.appendChild(crosshair);
+  chartSvg.appendChild(dotHr);
+  chartSvg.appendChild(dotW);
+
+  const overlay = svgEl('rect', { x: left, y: top, width: plotW, height: plotH, fill: 'transparent' });
+  chartSvg.appendChild(overlay);
+
+  function showPoint(clientX) {
+    const rect = chartSvg.getBoundingClientRect();
+    const svgX = (clientX - rect.left) * (vbW / rect.width);
+    const frac = Math.min(Math.max((svgX - left) / plotW, 0), 1);
+    const targetT = tMin + tSpan * frac;
+
+    let nearest = chartPoints[0];
+    let bestDiff = Infinity;
+    for (const p of chartPoints) {
+      const diff = Math.abs(p.t - targetT);
+      if (diff < bestDiff) { bestDiff = diff; nearest = p; }
+    }
+
+    const px = xPos(nearest.t);
+    crosshair.setAttribute('x1', px);
+    crosshair.setAttribute('x2', px);
+    crosshair.setAttribute('opacity', 1);
+    dotHr.setAttribute('cx', px);
+    dotHr.setAttribute('cy', yHr(nearest.hashrate));
+    dotHr.setAttribute('opacity', 1);
+    dotW.setAttribute('cx', px);
+    dotW.setAttribute('cy', yW(nearest.workers));
+    dotW.setAttribute('opacity', 1);
+
+    const wrapRect = chartWrap.getBoundingClientRect();
+    const tooltipX = (rect.left - wrapRect.left) + (px / vbW) * rect.width;
+    const tooltipY = (rect.top - wrapRect.top) + (yHr(nearest.hashrate) / vbH) * rect.height;
+
+    chartTooltip.style.left = tooltipX + 'px';
+    chartTooltip.style.top  = Math.max(tooltipY - 12, 0) + 'px';
+    chartTooltip.innerHTML = `
+      <div class="tooltip-time">${new Date(nearest.t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+      <div class="tooltip-hashrate">⬤ ${formatHashrate(nearest.hashrate)}</div>
+      <div class="tooltip-workers">⬤ ${nearest.workers} worker${nearest.workers === 1 ? '' : 's'}</div>
+    `;
+    chartTooltip.classList.remove('hidden');
+  }
+
+  function hidePoint() {
+    crosshair.setAttribute('opacity', 0);
+    dotHr.setAttribute('opacity', 0);
+    dotW.setAttribute('opacity', 0);
+    chartTooltip.classList.add('hidden');
+  }
+
+  overlay.addEventListener('mousemove', e => showPoint(e.clientX));
+  overlay.addEventListener('mouseleave', hidePoint);
+  overlay.addEventListener('touchstart', e => { const t = e.touches[0]; if (t) showPoint(t.clientX); }, { passive: true });
+  overlay.addEventListener('touchmove',  e => { const t = e.touches[0]; if (t) showPoint(t.clientX); }, { passive: true });
+  overlay.addEventListener('touchend', hidePoint);
+}
+
+loadPoolChart();
+// Refresh every minute — the source data updates on the same cadence
+setInterval(loadPoolChart, 60_000);
+
+// Re-measure on resize (debounced) so the viewBox keeps matching the
+// rendered size — e.g. on orientation change or window resize.
+let chartResizeTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(chartResizeTimer);
+  chartResizeTimer = setTimeout(() => {
+    if (chartPoints.length >= 2 && !chartSvg.classList.contains('hidden')) renderPoolChart();
+  }, 150);
+});
+
+// The chart card is display:none while another tab is active, so a periodic
+// refresh landing during that window would measure a 0×0 box. Re-measure
+// whenever the user navigates back to Home.
+refreshPoolChartOnShow = () => {
+  if (chartPoints.length >= 2) renderPoolChart();
+};
 
 // ── Payout breakdown (How Each Block Pays Out) ────────────
 
