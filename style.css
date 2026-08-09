@@ -1375,6 +1375,22 @@ body.chart-fullscreen-lock {
   font-size: .8rem;
 }
 
+.footer-bottom > div + div {
+  margin-top: .3rem;
+}
+
+.footer-solochance-link {
+  color: var(--muted);
+  text-decoration: none;
+  transition: color .2s;
+}
+
+/* Matches solo100.org's own footer hover color (Bitcoin orange), not this
+   site's green --accent, since it's a nod to that sister project's branding. */
+.footer-solochance-link:hover {
+  color: #F7931A;
+}
+
 /* ── Responsive ── */
 
 @media (max-width: 780px) {
