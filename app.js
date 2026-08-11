@@ -12,7 +12,7 @@ const DISCLAIMER_HTML = `
   <span class="disclaimer-icon">⚠️</span>
   <div>
     <strong>Disclaimer</strong>
-    <p>Participation in Bitcoin Cash mining, including through bch.ee Parasite Pool, which is still considered in beta testing, involves risks such as market volatility, hardware failure, and changes in network difficulty. bch.ee Parasite Pool is in beta and has not yet found a block; there is no assurance of future block discoveries or payouts. Users should exercise caution and consider their financial situation before engaging in mining activities.</p>
+    <p>Participation in Bitcoin Cash mining, including through bch.ee Parasite Pool, which is still considered in beta testing, involves risks such as market volatility, hardware failure, and changes in network difficulty. bch.ee Parasite Pool is in beta and <span class="disclaimer-block-clause">has not yet found a block</span>; there is no assurance of future block discoveries or payouts. Users should exercise caution and consider their financial situation before engaging in mining activities.</p>
     <p style="margin-top:.75rem">bch.ee Parasite Pool shall not be held responsible for any losses, missed payouts, technical failures, or interruptions of service of any kind.</p>
   </div>
 `;
@@ -21,6 +21,16 @@ document.querySelectorAll('.disclaimer-placeholder').forEach(el => {
   el.className = 'disclaimer';
   el.innerHTML = DISCLAIMER_HTML;
 });
+
+// Filled in once the live found-blocks count loads (see loadPoolStats) —
+// starts as the "beta, nothing found yet" wording so it's never wrong
+// before that first fetch resolves, on a pool that in fact hasn't found one.
+function updateDisclaimerBlockCount(count) {
+  const clause = count > 0
+    ? `has found ${count} block${count === 1 ? '' : 's'} so far`
+    : 'has not yet found a block';
+  document.querySelectorAll('.disclaimer-block-clause').forEach(el => { el.textContent = clause; });
+}
 
 // ── pool.work (payout membership for this round) ─
 
@@ -283,6 +293,7 @@ async function loadPoolStats() {
     getFoundBlocks()
       .then(blocks => {
         setStatValue('stat-blocks', blocks.length);
+        updateDisclaimerBlockCount(blocks.length);
         // Piggyback the chart's block markers on this same poll rather than
         // running a second, independent poll of the same (uncached) listing.
         updateChartBlocks(blocks);
