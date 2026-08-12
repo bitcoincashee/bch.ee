@@ -815,6 +815,15 @@ function goToMyStats(address) {
   doLookup();
 }
 
+// DD.MM.YYYY HH:mm, zero-padded, local time, 24-hour — a fixed format
+// instead of toLocaleString() so it reads the same for every visitor
+// regardless of browser locale.
+function formatBlockTimestamp(ts) {
+  const d = new Date(ts * 1000);
+  const pad = n => String(n).padStart(2, '0');
+  return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 function relativeTime(ts) {
   if (!ts) return '—';
   const diff = Math.floor((Date.now() / 1000) - ts);
@@ -1055,7 +1064,7 @@ function buildBlockRow(b) {
   const whenEl = document.createElement('div');
   whenEl.className = 'block-meta';
   whenEl.style.marginTop = '.3rem';
-  whenEl.textContent = when ? `${new Date(when * 1000).toLocaleString([], { hourCycle: 'h23' })} (${relativeTime(when)})` : '';
+  whenEl.textContent = when ? `${formatBlockTimestamp(when)} (${relativeTime(when)})` : '';
   right.appendChild(statusEl);
   right.appendChild(whenEl);
 
