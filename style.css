@@ -1139,27 +1139,35 @@ body.chart-fullscreen-lock {
 
 .bs-pending { color: var(--muted); opacity: .4; }
 
-/* Fixed layout + explicit column widths keep the wrapped address column
-   from forcing the whole table (and its wrapper) wider than the card. */
-#bestshares-table { table-layout: fixed; }
-#bestshares-table thead th:nth-child(1) { width: 7%; }
-#bestshares-table thead th:nth-child(2) { width: 25%; }
-#bestshares-table thead th:nth-child(3) { width: 13%; }
-#bestshares-table thead th:nth-child(4) { width: 13%; }
-#bestshares-table thead th:nth-child(5) { width: 13%; }
-#bestshares-table thead th:nth-child(6) { width: 17%; }
-#bestshares-table thead th:nth-child(7) { width: 12%; }
-
-/* Full (unmasked) addresses don't fit the fixed column on one line —
-   wrap instead of overflowing into neighboring cells. */
+/* Natural (auto) table layout, same as .workers-table on My Stats: columns
+   size to their content and the table can grow past the card's width, so
+   the wrapping div's overflow-x:auto scrolls horizontally only when it
+   actually needs to — and shows no scrollbar at all when everything fits. */
 #bestshares-table tbody td:nth-child(2) {
-  white-space: normal;
-  word-break: break-all;
   text-align: left;
 }
 
+/* Sized (and clamped) on the inner <code> rather than the <td> itself: a
+   table cell includes its own padding in a ch-based width (border-box),
+   which left less room for text than intended, and separately a table
+   cell's display:table-cell fights display:-webkit-box just enough to
+   let a sliver of a 4th line through the clamp. ~26ch fits a full address
+   in 2 lines on desktop; the mobile breakpoint below narrows that to
+   ~17ch (3 lines). table-layout:auto never shrinks a column below its
+   declared width on its own once scrolling is available — it just always
+   renders at that width and lets the table overflow — so getting an
+   actual 2-lines-wide/3-lines-narrow split needs this explicit breakpoint
+   rather than one fluid, auto-shrinking width. */
 .bs-address {
   cursor: pointer;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  white-space: normal;
+  word-break: break-all;
+  width: 26ch;
 }
 .bs-address:hover {
   color: var(--accent);
@@ -1437,4 +1445,6 @@ body.chart-fullscreen-lock {
   .chart-fullscreen-btn { display: none; }
 
   .footer-inner { flex-direction: column; align-items: center; }
+
+  .bs-address { width: 17ch; }
 }
