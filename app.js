@@ -824,6 +824,13 @@ function formatBlockTimestamp(ts) {
   return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+// "abc123...789xyz" — first 6 / last 6 chars, so a 64-char block hash
+// still fits on one line without needing to wrap or truncate with CSS.
+function shortenHash(hash) {
+  if (!hash || hash.length <= 16) return hash ?? '—';
+  return `${hash.slice(0, 6)}...${hash.slice(-6)}`;
+}
+
 function relativeTime(ts) {
   if (!ts) return '—';
   const diff = Math.floor((Date.now() / 1000) - ts);
@@ -1039,37 +1046,40 @@ function buildBlockRow(b) {
     row.rel = 'noopener';
   }
 
-  const left = document.createElement('div');
+  // Flat children placed via CSS grid-area (see .block-row), not nested
+  // wrapper divs — so the mobile breakpoint can rearrange them (status
+  // pill next to the height, instead of trailing below everything else
+  // once a wrapping flex column dropped to its own line) without needing
+  // a different DOM structure per breakpoint.
   const heightEl = document.createElement('div');
   heightEl.className = 'block-height';
   heightEl.textContent = 'Block #' + (height ?? '—');
-  const hashEl = document.createElement('div');
-  hashEl.className = 'block-hash';
-  hashEl.textContent = hash ?? '—';
-  left.appendChild(heightEl);
-  left.appendChild(hashEl);
-  if (finder) {
-    const finderEl = document.createElement('div');
-    finderEl.className = 'block-meta';
-    finderEl.style.marginTop = '.3rem';
-    finderEl.textContent = '⛏ ' + finder;
-    left.appendChild(finderEl);
-  }
 
-  const right = document.createElement('div');
-  right.style.textAlign = 'right';
   const statusEl = document.createElement('div');
   statusEl.className = 'block-status' + (confirmed ? ' confirmed' : '');
   statusEl.textContent = confirmed ? 'Confirmed' : 'Unconfirmed';
-  const whenEl = document.createElement('div');
-  whenEl.className = 'block-meta';
-  whenEl.style.marginTop = '.3rem';
-  whenEl.textContent = when ? `${formatBlockTimestamp(when)} (${relativeTime(when)})` : '';
-  right.appendChild(statusEl);
-  right.appendChild(whenEl);
 
-  row.appendChild(left);
-  row.appendChild(right);
+  const hashEl = document.createElement('div');
+  hashEl.className = 'block-hash';
+  hashEl.textContent = shortenHash(hash);
+  if (hash) hashEl.title = hash;
+
+  const whenEl = document.createElement('div');
+  whenEl.className = 'block-meta block-when';
+  whenEl.textContent = when ? `${formatBlockTimestamp(when)} (${relativeTime(when)})` : '';
+
+  row.appendChild(heightEl);
+  row.appendChild(statusEl);
+  row.appendChild(hashEl);
+  row.appendChild(whenEl);
+
+  if (finder) {
+    const finderEl = document.createElement('div');
+    finderEl.className = 'block-meta block-finder';
+    finderEl.textContent = '⛏ ' + finder;
+    row.appendChild(finderEl);
+  }
+
   return row;
 }
 

@@ -764,12 +764,21 @@ code.connect-value {
 
 /* ── Block rows ── */
 
+/* Named-area grid instead of two wrapping flex columns, so the mobile
+   breakpoint below can rearrange the same elements (status pill next to
+   the height) without a different DOM structure per breakpoint — with
+   the old flex layout, the status pill lived in a second flex column
+   that wrapped as a whole block below the first once it ran out of
+   room, landing well below "Block #N" instead of next to it. */
 .block-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    "height status"
+    "hash   when"
+    "finder finder";
+  column-gap: 1rem;
+  row-gap: .3rem;
   padding: 1rem 1.5rem;
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -786,17 +795,20 @@ code.connect-value {
   background: var(--bg-card-hover);
 }
 
-.block-row > div {
+.block-row > * {
   min-width: 0;
 }
 
 .block-height {
+  grid-area: height;
+  align-self: center;
   font-size: 1rem;
   font-weight: 500;
   color: var(--accent);
 }
 
 .block-hash {
+  grid-area: hash;
   font-family: 'Ubuntu Mono', monospace;
   font-size: .78rem;
   color: var(--muted);
@@ -809,7 +821,13 @@ code.connect-value {
   overflow-wrap: anywhere;
 }
 
+.block-when { grid-area: when; justify-self: end; align-self: center; }
+.block-finder { grid-area: finder; }
+
 .block-status {
+  grid-area: status;
+  justify-self: end;
+  align-self: center;
   display: inline-block;
   font-size: .72rem;
   font-weight: 500;
@@ -1447,4 +1465,14 @@ body.chart-fullscreen-lock {
   .footer-inner { flex-direction: column; align-items: center; }
 
   .bs-address { width: 17ch; }
+
+  .block-row {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "height status"
+      "hash   hash"
+      "when   when"
+      "finder finder";
+  }
+  .block-when { justify-self: start; }
 }
