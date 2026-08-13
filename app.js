@@ -132,15 +132,11 @@ let pendingBlocksPage = null;
 // Reassigned once the chart module below finishes initializing. showSection()
 // runs synchronously during the initial routeFromHash() call, which happens
 // before that module's `let`/`const` declarations further down the script
-// have executed — referencing them here directly would throw (temporal dead
-// zone) and abort the rest of the script. These indirections stay no-ops
-// until the chart module is ready, then do the real work on later
-// (post-load) navigations: re-render when Home is shown again, and leave
-// full screen when navigating away from Home (its toggle button lives
-// inside the Home section, so it'd otherwise be unreachable once hidden,
-// stranding the page with scrolling locked).
+// have executed — referencing it here directly would throw (temporal dead
+// zone) and abort the rest of the script. This indirection stays a no-op
+// until the chart module is ready, then re-renders on later (post-load)
+// navigations whenever Home is shown again.
 let refreshPoolChartOnShow = () => {};
-let exitChartFullscreen = () => {};
 
 function showSection(id) {
   sections.forEach(s => s.classList.toggle('active', s.id === id));
@@ -148,7 +144,6 @@ function showSection(id) {
   if (id === 'blocks') loadBlocks();
   if (id === 'bestshares') loadBestShares();
   if (id === 'home') refreshPoolChartOnShow();
-  else exitChartFullscreen();
 }
 
 // Navigating always goes through the URL hash, so the current section (and,
@@ -387,42 +382,19 @@ const chartTooltip     = document.getElementById('pool-chart-tooltip');
 const chartWrap        = document.getElementById('pool-chart-wrap');
 const chartWindowEl    = document.getElementById('chart-window');
 const chartCard        = document.querySelector('.chart-card');
-const chartFullscreenBtn = document.getElementById('chart-fullscreen-btn');
 
 const CHART_PAD = { top: 26, right: 46, bottom: 22, left: 50 }; // extra top room for block-height labels
 const CHART_MOBILE_BREAKPOINT = '(max-width: 600px)'; // matches style.css's mobile breakpoint
 const CHART_WINDOW_MOBILE_MS  = 60 * 60_000;      // 1h on mobile
 const CHART_WINDOW_DESKTOP_MS = 3 * 60 * 60_000;  // 3h on desktop
-// Full screen shows everything the API returns — that's the full 6h scope
-// once the pool's history has matured that far.
 
 let chartPoints = []; // [{ t: ms, hashrate: hps, workers: n }], oldest first — full, unclamped
-let chartFullscreen = false;
 
 function getChartWindowMs() {
-  // Mobile has no full screen mode (the toggle button is hidden there) —
-  // it always shows the 1h window. Desktop's full screen expands to the
-  // full fetched range.
-  if (window.matchMedia(CHART_MOBILE_BREAKPOINT).matches) return CHART_WINDOW_MOBILE_MS;
-  return chartFullscreen ? Infinity : CHART_WINDOW_DESKTOP_MS;
+  return window.matchMedia(CHART_MOBILE_BREAKPOINT).matches
+    ? CHART_WINDOW_MOBILE_MS
+    : CHART_WINDOW_DESKTOP_MS;
 }
-
-function setChartFullscreen(on) {
-  chartFullscreen = on;
-  chartCard.classList.toggle('fullscreen', on);
-  document.body.classList.toggle('chart-fullscreen-lock', on);
-  chartFullscreenBtn.classList.toggle('active', on);
-  chartFullscreenBtn.setAttribute('aria-label', on ? 'Exit full screen' : 'Full screen');
-  if (chartPoints.length >= 2) renderPoolChart();
-}
-
-chartFullscreenBtn.addEventListener('click', () => setChartFullscreen(!chartFullscreen));
-window.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && chartFullscreen) setChartFullscreen(false);
-});
-exitChartFullscreen = () => {
-  if (chartFullscreen) setChartFullscreen(false);
-};
 
 function svgEl(tag, attrs) {
   const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
@@ -515,7 +487,6 @@ async function loadPoolChart() {
 }
 
 function renderPoolChart() {
-  // Mobile/desktop show a recent slice; full screen shows everything fetched.
   const windowMs = getChartWindowMs();
   const fullTMax = chartPoints.length ? chartPoints[chartPoints.length - 1].t : 0;
   const cutoff = fullTMax - windowMs;
@@ -533,13 +504,13 @@ function renderPoolChart() {
 
   // If the chart is already showing, measure before touching anything else.
   // Mobile browsers can report a transient near-zero box mid-orientation-
-  // change (address bar show/hide animation, full screen layout not yet
-  // settled, etc.); committing that size into the viewBox would squash the
-  // whole chart into a corner until another resize happens to fire. Bail
-  // out and leave the previous render in place — the resize handler's
-  // follow-up "settle" pass retries once layout has actually caught up.
-  // (This guard is skipped on the very first reveal, where the SVG
-  // legitimately measures 0×0 because it's still display:none.)
+  // change (address bar show/hide animation, etc.); committing that size
+  // into the viewBox would squash the whole chart into a corner until
+  // another resize happens to fire. Bail out and leave the previous render
+  // in place — the resize handler's follow-up "settle" pass retries once
+  // layout has actually caught up. (This guard is skipped on the very
+  // first reveal, where the SVG legitimately measures 0×0 because it's
+  // still display:none.)
   const wasVisible = !chartSvg.classList.contains('hidden');
   if (wasVisible) {
     const precheck = chartSvg.getBoundingClientRect();
@@ -724,22 +695,13 @@ setInterval(loadPoolChart, 60_000);
 // squashed chart from a bad size.
 let chartResizeTimer = null;
 let chartResizeSettleTimer = null;
-// Mobile has no full screen mode (its toggle button is hidden there — see
-// style.css), so if a resize/rotation shrinks the window down to mobile
-// width while full screen is still active from a wider layout, there'd be
-// no button left to close it with. Auto-exit in that case.
-function exitFullscreenIfMobile() {
-  if (chartFullscreen && window.matchMedia(CHART_MOBILE_BREAKPOINT).matches) setChartFullscreen(false);
-}
 
 function scheduleChartResize() {
   clearTimeout(chartResizeTimer);
   clearTimeout(chartResizeSettleTimer);
   chartResizeTimer = setTimeout(() => {
-    exitFullscreenIfMobile();
     if (chartPoints.length >= 2) renderPoolChart();
     chartResizeSettleTimer = setTimeout(() => {
-      exitFullscreenIfMobile();
       if (chartPoints.length >= 2) renderPoolChart();
     }, 350);
   }, 150);

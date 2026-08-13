@@ -1090,28 +1090,6 @@ code.connect-value {
   background: var(--bg-card);
 }
 
-.chart-card.fullscreen {
-  position: fixed;
-  inset: 0;
-  z-index: 500;
-  margin: 0;
-  border-radius: 0;
-  display: flex;
-  flex-direction: column;
-  background: var(--bg);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-}
-
-.chart-card.fullscreen .chart-wrap {
-  flex: 1 1 auto;
-  height: auto;
-}
-
-body.chart-fullscreen-lock {
-  overflow: hidden;
-}
-
 .chart-header {
   display: flex;
   align-items: baseline;
@@ -1140,32 +1118,6 @@ body.chart-fullscreen-lock {
   font-size: .78rem;
   color: var(--muted);
 }
-
-.chart-fullscreen-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.75rem;
-  height: 1.75rem;
-  padding: 0;
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  color: var(--muted);
-  cursor: pointer;
-  transition: color .2s, border-color .2s, background .2s;
-}
-
-.chart-fullscreen-btn:hover,
-.chart-fullscreen-btn.active {
-  color: var(--accent);
-  border-color: var(--accent);
-  background: var(--accent-dim);
-}
-
-.chart-fullscreen-btn .icon-compress { display: none; }
-.chart-fullscreen-btn.active .icon-expand { display: none; }
-.chart-fullscreen-btn.active .icon-compress { display: block; }
 
 .legend-item {
   display: inline-flex;
@@ -1669,7 +1621,6 @@ body.chart-fullscreen-lock {
   .connect-label { min-width: unset; }
 
   .chart-wrap { height: 170px; }
-  .chart-fullscreen-btn { display: none; }
 
   .footer-inner { flex-direction: column; align-items: center; }
 
