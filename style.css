@@ -101,6 +101,7 @@ main.container {
   padding: .4rem .85rem;
   border-radius: var(--radius-sm);
   cursor: pointer;
+  text-decoration: none;
   transition: color .2s, background .2s;
 }
 
@@ -145,6 +146,206 @@ main.container {
   font-size: 1.05rem;
   max-width: 580px;
 }
+
+.sponsor-banner {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: .8rem;
+  color: var(--muted);
+  background: linear-gradient(135deg, rgba(240, 180, 41, 0.08), rgba(240, 180, 41, 0.02));
+  border: 1px solid rgba(240, 180, 41, 0.3);
+  border-radius: var(--radius);
+  padding: .75rem 1.1rem;
+  margin-bottom: 1.5rem;
+  transition: transform .2s ease, box-shadow .2s ease, background .2s ease;
+}
+
+.sponsor-banner:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 32px rgba(240, 180, 41, 0.18);
+  background: linear-gradient(135deg, rgba(240, 180, 41, 0.12), rgba(240, 180, 41, 0.03));
+}
+
+.sponsor-banner-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: .4rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.sponsor-banner-icon {
+  flex-shrink: 0;
+  font-size: 2.75rem;
+  line-height: 1;
+}
+
+.sponsor-banner-text strong { color: var(--text); }
+
+.sponsor-banner-link {
+  color: var(--yellow);
+  text-decoration: none;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: opacity .2s;
+}
+
+.sponsor-banner-link:hover { opacity: .75; }
+
+.sponsor-ribbon {
+  position: absolute;
+  top: 13px;
+  right: -34px;
+  width: 130px;
+  text-align: center;
+  background: var(--yellow);
+  color: #1a1300;
+  font-size: .62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  padding: .28rem 0;
+  transform: rotate(45deg);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .3);
+}
+
+/* ── Sponsor page ── */
+
+.sponsor-tier-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+  margin: 2rem 0;
+}
+
+.sponsor-tier {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.sponsor-tier-featured {
+  background: linear-gradient(135deg, rgba(240, 180, 41, 0.08), rgba(240, 180, 41, 0.02));
+  border-color: rgba(240, 180, 41, 0.3);
+}
+
+.sponsor-tier-price {
+  font-size: 1.7rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.sponsor-tier-price span {
+  font-size: .82rem;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.sponsor-tier-name {
+  font-size: 1.05rem;
+  font-weight: 500;
+  margin: .3rem 0 .6rem;
+}
+
+.sponsor-tier-desc {
+  color: var(--muted);
+  font-size: .88rem;
+  line-height: 1.65;
+  margin-bottom: 1rem;
+}
+
+.sponsor-slot-box {
+  margin-bottom: 1rem;
+}
+
+.slot-available {
+  color: var(--accent);
+  font-size: .82rem;
+  font-weight: 500;
+}
+
+.sponsor-cta {
+  display: inline-block;
+  margin-top: auto;
+  background: var(--yellow);
+  color: #1a1300;
+  text-decoration: none;
+  font-size: .9rem;
+  font-weight: 500;
+  padding: .65rem 1.4rem;
+  border-radius: var(--radius-sm);
+  transition: opacity .2s, transform .15s;
+}
+
+.sponsor-cta-alt {
+  background: var(--accent);
+  color: #000;
+}
+
+.sponsor-cta:hover { opacity: .88; transform: translateY(-1px); }
+
+.supporter-list {
+  list-style: none;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: .4rem;
+  margin-bottom: 1.2rem;
+  width: 100%;
+}
+
+.supporter-slot {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  font-size: .82rem;
+  padding: .4rem .6rem;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.supporter-slot-num { color: var(--muted); }
+
+.donation-field {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: .6rem .8rem;
+  width: 100%;
+}
+
+.donation-address {
+  flex: 1;
+  min-width: 0;
+  font-family: 'Ubuntu Mono', monospace;
+  font-size: .82rem;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.donation-copy-btn {
+  flex-shrink: 0;
+  background: var(--accent-dim);
+  color: var(--accent);
+  border: none;
+  font-family: 'Ubuntu', sans-serif;
+  font-size: .8rem;
+  font-weight: 500;
+  padding: .4rem .9rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background .2s;
+}
+
+.donation-copy-btn:hover { background: var(--accent-glow); }
 
 .byline {
   display: inline-flex;
@@ -193,6 +394,8 @@ main.container {
   margin-bottom: 1rem;
   margin-top: 0;
 }
+
+.section-title-gold { color: var(--yellow); }
 
 /* ── Cards ── */
 
@@ -1475,4 +1678,6 @@ body.chart-fullscreen-lock {
       "finder finder";
   }
   .block-when { justify-self: start; }
+
+  .sponsor-banner-icon { font-size: 1.8rem; }
 }
