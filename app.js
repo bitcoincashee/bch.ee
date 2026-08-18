@@ -1193,8 +1193,8 @@ async function loadBestShares() {
       const pctTip = pct > 100
         ? ` <span class="info-tip" data-tip="This share was sent before the last target was lowered">i</span>`
         : '';
-      const hps = hashrateToHps(r.hashrate1m);
-      const icon = hps > 0 ? '<span class="miner-active-icon">⛏️</span>' : '<span class="miner-idle-icon">💤</span>';
+      const idle = !r.lastshare || (Date.now() / 1000 - r.lastshare) >= 300;
+      const icon = idle ? '<span class="miner-idle-icon">💤</span>' : '<span class="miner-active-icon">⛏️</span>';
       const medal = bsMedals[top3.indexOf(r.address)];
       const bsCell = medal ? medal + ' ' + formatDiffCompact(r.bestshare) : formatDiffCompact(r.bestshare);
       let payoutStr = '—';
@@ -1296,7 +1296,8 @@ async function loadBestShares() {
             address:    addr,
             bestshare:  data.bestshare ?? 0,
             hashrate1m: data.hashrate1m ?? null,
-            userLns:    data.herp ?? data.lns ?? data.shares ?? null
+            userLns:    data.herp ?? data.lns ?? data.shares ?? null,
+            lastshare:  data.lastshare ?? data.last_share ?? data.lastShareTime ?? null
           } : null);
           renderBestSharesBody();
         })
