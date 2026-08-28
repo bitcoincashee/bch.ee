@@ -7,16 +7,12 @@
   <meta name="description" content="The most exciting SHA-256 pool to join. Mine Bitcoin Cash with a 1 BCH block finder bonus and Full Round Payouts. ~0.7% effective fee. para.bch.ee:3333" />
   <meta property="og:title" content="bch.ee Parasite Pool — Bitcoin Cash Mining Pool" />
   <meta property="og:description" content="The most exciting SHA-256 pool to join. Mine Bitcoin Cash with a 1 BCH block finder bonus and Full Round Payouts. ~0.7% effective fee. para.bch.ee:3333" />
-  <meta property="og:image" content="https://bch.ee/og-image.png" />
-  <meta property="og:image:width" content="1200" />
-  <meta property="og:image:height" content="630" />
   <meta property="og:url" content="https://bch.ee" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="bch.ee Parasite Pool" />
-  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:card" content="summary" />
   <meta name="twitter:title" content="bch.ee Parasite Pool — Bitcoin Cash Mining Pool" />
   <meta name="twitter:description" content="The most exciting SHA-256 pool to join. Mine Bitcoin Cash with a 1 BCH block finder bonus and Full Round Payouts." />
-  <meta name="twitter:image" content="https://bch.ee/og-image.png" />
   <link rel="canonical" href="https://bch.ee/" />
   <link rel="icon" type="image/x-icon" href="favicon.ico" />
   <link rel="icon" type="image/svg+xml" href="logo.svg" />
@@ -172,9 +168,9 @@
       <div class="card-grid three-col">
         <div class="card info-card">
           <div class="info-icon">💸</div>
-          <div class="info-title">~0.7% Effective Fee</div>
+          <div class="info-title">2% Pool Fee</div>
           <div class="info-desc">
-            The <strong>1 BCH finder bonus is paid fee-free</strong>. The 1% fee applies only to the remaining distributable reward — making the effective fee on the full block reward approximately <strong>0.7%</strong>.
+            The pool fee is <strong>2%</strong> of the full block reward, taken first — before the 1 BCH finder bonus and miner payouts are calculated.
           </div>
         </div>
         <div class="card info-card">
@@ -183,9 +179,9 @@
           <div class="info-desc">
             Every payment is made directly in the block's coinbase — fully trustless, with no ongoing bookkeeping.
             <ol class="payout-order">
-              <li><span class="payout-amount">1 BCH</span><span id="payout-finder-usd"></span> to the block finder</li>
-              <li><span class="payout-amount">99%</span> of the rest — currently <strong id="payout-miners-amount">—</strong><span id="payout-miners-usd"></span> — to miners, proportionally by work done</li>
-              <li><span class="payout-amount">1%</span> of the rest — currently <strong id="payout-fee-amount">—</strong><span id="payout-fee-usd"></span> — as the pool fee, effectively <strong>~0.7%</strong> since the finder bonus is fee-free</li>
+              <li><span class="payout-amount">2%</span> of the full reward — currently <strong id="payout-fee-amount">—</strong><span id="payout-fee-usd"></span> — taken first, as the pool fee</li>
+              <li><span class="payout-amount">1 BCH</span><span id="payout-finder-usd"></span> to the block finder, from what's left</li>
+              <li>The rest — currently <strong id="payout-miners-amount">—</strong><span id="payout-miners-usd"></span> — to miners, proportionally by work done, as the final payment</li>
             </ol>
           </div>
         </div>
@@ -194,7 +190,7 @@
           <div class="info-title">Full Round Payouts (PROP)</div>
           <div class="info-desc">
             All shares since the last block count equally. No luck penalty.
-            <div class="formula">Your expected payment = (Block Reward + Tx Fees − 1 BCH) × 99% × <sup>your shares</sup>/<sub>pool shares</sub></div>
+            <div class="formula">Your expected payment = ((Block Reward + Tx Fees) × 98% − 1 BCH) × <sup>your shares</sup>/<sub>pool shares</sub></div>
           </div>
         </div>
       </div>
@@ -659,11 +655,11 @@
           <summary>How do payouts work?</summary>
           <p>Every time a block is found, three things happen:</p>
           <ol class="faq-ol">
-            <li><strong>1 BCH</strong> is paid to the miner who found the block, directly in the block's coinbase.</li>
-            <li><strong>99% of (Block Reward + Tx Fees − 1 BCH)</strong> is split proportionally (PROP) among all miners based on their shares submitted since the last block — no minimum, even 1 sat is paid.</li>
-            <li><strong>1%</strong> goes to the pool fee.</li>
+            <li><strong>2%</strong> of the full block reward (Block Reward + Tx Fees) is taken first, as the pool fee.</li>
+            <li><strong>1 BCH</strong> is paid to the miner who found the block, directly in the block's coinbase, from what's left after the fee.</li>
+            <li>The remaining balance is split proportionally (PROP) among all miners based on their shares submitted since the last block — no minimum, even 1 sat is paid.</li>
           </ol>
-          <p>The block finder receives both #1 and their share of #2, all paid in that same coinbase transaction. It's fully trustless — no pool-side ledger to trust, and no ongoing bookkeeping.</p>
+          <p>The block finder receives both #2 and their share of #3, all paid in that same coinbase transaction. It's fully trustless — no pool-side ledger to trust, and no ongoing bookkeeping.</p>
         </details>
 
         <details class="faq-item">
@@ -673,7 +669,7 @@
 
         <details class="faq-item">
           <summary>What is the pool fee?</summary>
-          <p>The effective fee is approximately <strong>~0.7%</strong> of the full block reward. The 1 BCH finder bonus is paid completely fee-free. The 1% fee applies only to the remaining distributable reward — so on a 3.125 BCH block, the fee is taken from 2.125 BCH, not the full amount.</p>
+          <p>The pool fee is <strong>2%</strong> of the full block reward, taken first — before the 1 BCH finder bonus and miner payouts are calculated. So on a 3.125 BCH block, the fee is 0.0625 BCH.</p>
         </details>
 
         <details class="faq-item">
@@ -704,14 +700,6 @@
         <details class="faq-item">
           <summary>Where is bch.ee Parasite Pool located?</summary>
           <p>The pool server runs in Frankfurt, Germany. Invoicing and domain purchases are handled through Estonia, thanks to the <a href="https://e-resident.gov.ee" target="_blank" rel="noopener">Estonian e-Residency</a> programme, which allows individuals to access EU digital services without being a resident. The operator lives somewhere else.</p>
-        </details>
-
-        <details class="faq-item">
-          <summary>Are you part of the OSMU community?</summary>
-          <p><a href="https://osmu.wiki" target="_blank" rel="noopener">OSMU</a> (Open Source Miners United) is a community of people passionate about Bitcoin and open-source mining, built around the belief that knowledge should be shared openly. I was an active member in the early days — it shaped a lot of how I think about mining. Life got busy; learning a new language, preparing to migrate for a better life kept my calendar full, and I gradually became more of a read-only member. But the spirit of that community is very much part of why bch.ee Parasite Pool exists.</p>
-          <p>Honestly, one of the things I feel most held back by is something I had no say in — the passport I was born with. I didn't choose my country any more than anyone chooses where they're born. But the consequences are real: no visa to the US, no free movement in the Schengen area, no Bitcoin conferences in Europe or the UK. If I had been born a US, UK, or German citizen, I have no doubt things would have looked very different — I would have shown up, contributed in person, and been far more active. Until I naturalise somewhere that opens those doors, staying on the sidelines is simply the reality.</p>
-          <p>To make matters more absurd — even importing a $10 Bitaxe accessory is either outright forbidden or burdened with such substantial import taxes and fees that it becomes economically pointless. The hardware that the rest of the world tinkers with freely is effectively out of reach. Until my circumstances change, I'll be channelling my energy into my own products for fun, and my career to survive — and staying out of it.</p>
-          <p>I especially want to thank <a href="https://x.com/skot9000" target="_blank" rel="noopener">@skot9000</a>, <a href="https://x.com/wantclue" target="_blank" rel="noopener">@wantclue</a>, <a href="https://www.rgzen.com/index.php" target="_blank" rel="noopener">RGZ Electronics</a>, and <a href="https://www.thesolomining.co/" target="_blank" rel="noopener">The Solo Mining Co.</a> for their kind early help and everything they contributed to this space.</p>
         </details>
 
         <details class="faq-item">
@@ -840,7 +828,7 @@
             "name": "How do payouts work?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Every time a block is found, three things happen: 1 BCH is paid to the miner who found the block, directly in the block's coinbase; 99% of (Block Reward + Tx Fees \u2212 1 BCH) is split proportionally (PROP) among all miners based on their shares submitted since the last block \u2014 no minimum, even 1 sat is paid; 1% goes to the pool fee. The block finder receives both #1 and their share of #2, all paid in that same coinbase transaction. It's fully trustless \u2014 no pool-side ledger to trust, and no ongoing bookkeeping."
+              "text": "Every time a block is found, three things happen: 2% of the full block reward (Block Reward + Tx Fees) is taken first, as the pool fee; 1 BCH is paid to the miner who found the block, directly in the block's coinbase, from what's left after the fee; the remaining balance is split proportionally (PROP) among all miners based on their shares submitted since the last block \u2014 no minimum, even 1 sat is paid. The block finder receives both #2 and their share of #3, all paid in that same coinbase transaction. It's fully trustless \u2014 no pool-side ledger to trust, and no ongoing bookkeeping."
             }
           },
           {
@@ -856,7 +844,7 @@
             "name": "What is the pool fee?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "The effective fee is approximately ~0.7% of the full block reward. The 1 BCH finder bonus is paid completely fee-free. The 1% fee applies only to the remaining distributable reward \u2014 so on a 3.125 BCH block, the fee is taken from 2.125 BCH, not the full amount."
+              "text": "The pool fee is 2% of the full block reward, taken first \u2014 before the 1 BCH finder bonus and miner payouts are calculated. So on a 3.125 BCH block, the fee is 0.0625 BCH."
             }
           },
           {

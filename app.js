@@ -900,8 +900,8 @@ async function doLookup() {
     if (userLns != null && poolLns != null && poolLns > 0) {
       const BLOCK_REWARD = poolReward ?? 3.125;
       const FINDER_BONUS = 1;
-      const POOL_FEE     = 0.99;
-      const base = (BLOCK_REWARD - FINDER_BONUS) * POOL_FEE * (userLns / poolLns);
+      const FEE_RATE     = 0.02; // taken first, off the full block reward
+      const base = (BLOCK_REWARD * (1 - FEE_RATE) - FINDER_BONUS) * (userLns / poolLns);
       userPayoutFinder = base + FINDER_BONUS;
       userPayoutShare  = base;
 
@@ -1151,6 +1151,8 @@ async function loadBestShares() {
     const statusText = await statusResp.text();
 
     const addresses = Object.keys(work.payouts ?? {});
+    const postponedAddresses = Object.keys(work.postponed ?? {});
+    const allAddresses = [...new Set([...addresses, ...postponedAddresses])];
 
     const pool = {};
     statusText.trim().split('\n').forEach(line => {
@@ -1187,7 +1189,7 @@ async function loadBestShares() {
       });
     }
 
-    function renderRow(r, rank, top3) {
+    function renderRow(r, rank, top3, postponed) {
       const pct = (r.bestshare / networkDiff * 100);
       const pctRaw = pct >= 0.001 ? pct.toFixed(3) + '%' : '&lt; 0.001%';
       const pctTip = pct > 100
@@ -1199,11 +1201,22 @@ async function loadBestShares() {
       const bsCell = medal ? medal + ' ' + formatDiffCompact(r.bestshare) : formatDiffCompact(r.bestshare);
       let payoutStr = '—';
       let payoutUsd = '';
-      if (r.userLns != null && poolLns != null && poolLns > 0) {
-        const base = (BLOCK_REWARD - 1) * 0.99 * (r.userLns / poolLns);
-        payoutStr = base.toFixed(8) + ' BCH';
-        const usd = formatUsd(base);
-        if (usd) payoutUsd = `<div class="bs-payout-usd">${usd}</div>`;
+      if (!postponed) {
+        // work.payouts[address] is the pool's own already-computed BCH amount —
+        // authoritative, and unaffected by /users/ herp going stale for a miner
+        // that's since gone idle. Only fall back to the client-side estimate
+        // (share ratio × block reward) if that address is missing from it.
+        const authoritative = work.payouts?.[r.address];
+        if (authoritative != null) {
+          payoutStr = authoritative.toFixed(8) + ' BCH';
+          const usd = formatUsd(authoritative);
+          if (usd) payoutUsd = `<div class="bs-payout-usd">${usd}</div>`;
+        } else if (r.userLns != null && poolLns != null && poolLns > 0) {
+          const base = (BLOCK_REWARD * 0.98 - 1) * (r.userLns / poolLns);
+          payoutStr = base.toFixed(8) + ' BCH';
+          const usd = formatUsd(base);
+          if (usd) payoutUsd = `<div class="bs-payout-usd">${usd}</div>`;
+        }
       }
       return `<tr>
         <td>${rank}</td>
@@ -1228,6 +1241,14 @@ async function loadBestShares() {
       </tr>`;
     }
 
+    function renderCutoffRow() {
+      return `<tr class="bs-cutoff-row"><td colspan="7"><div class="bs-cutoff-inner">
+        <span class="bs-cutoff-line"></span>
+        Top 100 payout cutoff — payouts for addresses below will be postponed to next blocks
+        <span class="bs-cutoff-line"></span>
+      </div></td></tr>`;
+    }
+
     function renderBestSharesBody() {
       const loaded = [];
       const pending = [];
@@ -1236,12 +1257,20 @@ async function loadBestShares() {
         else if (userData.get(addr) !== null) loaded.push(userData.get(addr));
       }
 
+      const postponedLoaded = [];
+      const postponedPending = [];
+      for (const addr of postponedAddresses) {
+        if (!userData.has(addr)) postponedPending.push(addr);
+        else if (userData.get(addr) !== null) postponedLoaded.push(userData.get(addr));
+      }
+
       const top3 = [...loaded]
         .sort((a, b) => b.bestshare - a.bestshare)
         .slice(0, 3)
         .map(r => r.address);
 
       const sortedLoaded = sortRows(loaded);
+      const sortedPostponedLoaded = sortRows(postponedLoaded);
 
       table.querySelectorAll('th[data-sort]').forEach(th => {
         const active = th.dataset.sort === sortCol;
@@ -1251,8 +1280,14 @@ async function loadBestShares() {
 
       let rank = 1;
       let html = '';
-      html += sortedLoaded.map(r => renderRow(r, rank++, top3)).join('');
+      html += sortedLoaded.map(r => renderRow(r, rank++, top3, false)).join('');
       html += pending.map(a => renderPendingRow(a, rank++)).join('');
+
+      if (postponedAddresses.length > 0) {
+        html += renderCutoffRow();
+        html += sortedPostponedLoaded.map(r => renderRow(r, rank++, top3, true)).join('');
+        html += postponedPending.map(a => renderPendingRow(a, rank++)).join('');
+      }
 
       table.querySelector('tbody').innerHTML = html;
     }
@@ -1287,21 +1322,40 @@ async function loadBestShares() {
     tableCard.classList.remove('hidden');
     renderBestSharesBody();
 
-    // Fetch each user individually; update their row as data arrives
-    addresses.forEach(addr => {
+    // Fetch each user individually; update their row as data arrives. "Work
+    // done" is herp (this round's live contribution, which resets to 0 once
+    // a miner goes idle) PLUS accumulated (shares carried over from being
+    // postponed in an earlier round) — either alone can read 0 for an
+    // address that's actually owed a real amount, so both are needed to get
+    // the true total. work.postponed[addr] is only a last-resort fallback,
+    // for when the /users/ call itself fails.
+    allAddresses.forEach(addr => {
+      const postponedShares = work.postponed?.[addr] ?? null;
       fetch(`${API_BASE}/users/${encodeURIComponent(addr)}`, { cache: 'no-cache' })
         .then(r => r.ok ? r.json() : null)
         .then(data => {
-          userData.set(addr, data ? {
-            address:    addr,
-            bestshare:  data.bestshare ?? 0,
-            hashrate1m: data.hashrate1m ?? null,
-            userLns:    data.herp ?? data.lns ?? data.shares ?? null,
-            lastshare:  data.lastshare ?? data.last_share ?? data.lastShareTime ?? null
-          } : null);
+          if (data) {
+            const liveShares = data.herp ?? data.lns ?? data.shares ?? 0;
+            userData.set(addr, {
+              address:    addr,
+              bestshare:  data.bestshare ?? 0,
+              hashrate1m: data.hashrate1m ?? null,
+              userLns:    liveShares + (data.accumulated ?? 0),
+              lastshare:  data.lastshare ?? data.last_share ?? data.lastShareTime ?? null
+            });
+          } else if (postponedShares != null) {
+            userData.set(addr, { address: addr, bestshare: 0, hashrate1m: null, userLns: postponedShares, lastshare: null });
+          } else {
+            userData.set(addr, null);
+          }
           renderBestSharesBody();
         })
-        .catch(() => { userData.set(addr, null); renderBestSharesBody(); });
+        .catch(() => {
+          userData.set(addr, postponedShares != null
+            ? { address: addr, bestshare: 0, hashrate1m: null, userLns: postponedShares, lastshare: null }
+            : null);
+          renderBestSharesBody();
+        });
     });
 
   } catch (err) {

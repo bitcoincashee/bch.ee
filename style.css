@@ -1399,6 +1399,39 @@ code.connect-value {
 
 .bs-pending { color: var(--muted); opacity: .4; }
 
+/* :first-child to match (and win the tie-break against, via source order)
+   .workers-table td:first-child's max-width/ellipsis/nowrap — this row's
+   single colspan="7" td is always its row's first child. */
+.bs-cutoff-row td:first-child {
+  padding: .55rem 1rem;
+  max-width: none;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  border-top: 2px solid var(--accent);
+  border-bottom: 1px solid rgba(10, 193, 142, .35);
+  background: transparent;
+}
+
+.bs-cutoff-inner {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  color: var(--accent);
+  font-family: 'Ubuntu Mono', monospace;
+  font-size: .72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  white-space: normal;
+}
+
+.bs-cutoff-line {
+  flex: 1;
+  height: 1px;
+  background: rgba(10, 193, 142, .5);
+}
+
 /* Natural (auto) table layout, same as .workers-table on My Stats: columns
    size to their content and the table can grow past the card's width, so
    the wrapping div's overflow-x:auto scrolls horizontally only when it

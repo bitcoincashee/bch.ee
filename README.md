@@ -1,6 +1,6 @@
 # bch.ee Parasite Pool
 
-A Bitcoin Cash (BCH) mining pool with a 1 BCH block finder bonus, Full Round Payouts (PROP), and a ~0.7% effective fee.
+A Bitcoin Cash (BCH) mining pool with a 1 BCH block finder bonus, Full Round Payouts (PROP), and a 2% pool fee.
 
 Run by the developer of [SoloChance.org](https://solochance.org). Inspired by [parasite.space](https://parasite.space).
 
@@ -18,15 +18,15 @@ No registration required — your BCH address is your identity.
 
 ## Payout Structure
 
-1. **1 BCH** finder bonus to whoever finds the block (fee-free), paid directly in the block's coinbase
-2. **99%** of the remaining reward (Block Reward + Tx Fees - 1 BCH) split proportionally (PROP) among all miners by shares, also paid in the coinbase — no minimum, even 1 sat is paid
-3. **1%** pool fee on the remaining reward
+1. **2%** pool fee, taken first from the full block reward (Block Reward + Tx Fees)
+2. **1 BCH** finder bonus to whoever finds the block, paid directly in the block's coinbase, from what's left after the fee
+3. The remaining balance split proportionally (PROP) among all miners by shares, also paid in the coinbase — no minimum, even 1 sat is paid
 
 All shares since the last block count equally — no luck penalty. Every payout is included directly in the coinbase transaction that finds the block, so it's fully trustless with no ongoing bookkeeping.
 
 ## Fee
 
-The effective fee on the full block reward is approximately **~0.7%** because the 1 BCH finder bonus is paid fee-free. The 1% fee applies only to the remaining distributable reward.
+The pool fee is **2%** of the full block reward, taken first — before the 1 BCH finder bonus and miner payouts are calculated.
 
 ## Infrastructure
 

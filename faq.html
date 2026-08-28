@@ -7,16 +7,12 @@
   <meta name="description" content="Frequently asked questions about bch.ee Parasite Pool — how payouts work, fees, hardware, Full Round Payouts, and how to connect your miner." />
   <meta property="og:title" content="FAQ — bch.ee Parasite Pool" />
   <meta property="og:description" content="Everything you need to know about bch.ee Parasite Pool — payouts, fees, hardware support, and how to get started mining Bitcoin Cash." />
-  <meta property="og:image" content="https://bch.ee/og-image.png" />
-  <meta property="og:image:width" content="1200" />
-  <meta property="og:image:height" content="630" />
   <meta property="og:url" content="https://bch.ee/faq.html" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="bch.ee Parasite Pool" />
-  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:card" content="summary" />
   <meta name="twitter:title" content="FAQ — bch.ee Parasite Pool" />
   <meta name="twitter:description" content="Frequently asked questions about bch.ee Parasite Pool — how payouts work, fees, hardware, Full Round Payouts, and how to connect your miner." />
-  <meta name="twitter:image" content="https://bch.ee/og-image.png" />
   <link rel="canonical" href="https://bch.ee/faq.html" />
   <link rel="icon" type="image/x-icon" href="favicon.ico" />
   <link rel="icon" type="image/svg+xml" href="logo.svg" />
@@ -91,11 +87,11 @@
         <summary>How do payouts work?</summary>
         <p>Every time a block is found, three things happen:</p>
         <ol class="faq-ol">
-          <li><strong>1 BCH</strong> is paid to the miner who found the block, directly in the block's coinbase.</li>
-          <li><strong>99% of (Block Reward + Tx Fees − 1 BCH)</strong> is split proportionally (PROP) among all miners based on their shares submitted since the last block — no minimum, even 1 sat is paid.</li>
-          <li><strong>1%</strong> goes to the pool fee.</li>
+          <li><strong>2%</strong> of the full block reward (Block Reward + Tx Fees) is taken first, as the pool fee.</li>
+          <li><strong>1 BCH</strong> is paid to the miner who found the block, directly in the block's coinbase, from what's left after the fee.</li>
+          <li>The remaining balance is split proportionally (PROP) among all miners based on their shares submitted since the last block — no minimum, even 1 sat is paid.</li>
         </ol>
-        <p>The block finder receives both: the 1 BCH bonus, plus their own proportional share of the 99% like every other miner — all paid in that same coinbase transaction. It's fully trustless — no pool-side ledger to trust, and no ongoing bookkeeping.</p>
+        <p>The block finder receives both the 1 BCH bonus, plus their own proportional share of the remaining balance like every other miner — all paid in that same coinbase transaction. It's fully trustless — no pool-side ledger to trust, and no ongoing bookkeeping.</p>
       </details>
 
       <details class="faq-item">
@@ -105,7 +101,7 @@
 
       <details class="faq-item">
         <summary>What is the pool fee?</summary>
-        <p>The effective fee is approximately <strong>~0.7%</strong> of the full block reward. The 1 BCH finder bonus is paid completely fee-free. The 1% fee applies only to the remaining distributable reward — so on a 3.125 BCH block, the fee is taken from 2.125 BCH, not the full amount.</p>
+        <p>The pool fee is <strong>2%</strong> of the full block reward, taken first — before the 1 BCH finder bonus and miner payouts are calculated. So on a 3.125 BCH block, the fee is 0.0625 BCH.</p>
       </details>
 
       <details class="faq-item">
@@ -136,21 +132,6 @@
       <details class="faq-item">
         <summary>Where is bch.ee Parasite Pool located?</summary>
         <p>The pool server runs in Frankfurt, Germany. Invoicing and domain purchases are handled through Estonia, thanks to the <a href="https://e-resident.gov.ee" target="_blank" rel="noopener">Estonian e-Residency</a> programme, which allows individuals to access EU digital services without being a resident. The operator lives somewhere else.</p>
-      </details>
-
-      <details class="faq-item">
-        <summary>What software is bch.ee Parasite Pool built on?</summary>
-        <p>It is built on <a href="https://github.com/cculianu/asicseer-pool" target="_blank" rel="noopener">asicseer-pool</a>, with the necessary modifications made for our setup. Asicseer-pool itself is based on the industry-standard <a href="https://bitbucket.org/ckolivas/ckpool/src/master/" target="_blank" rel="noopener">ckpool</a> by Con Kolivas.</p>
-        <p>While on the subject — a sincere thank you to <a href="https://x.com/ckpooldev" target="_blank" rel="noopener">Con Kolivas</a>, the Prometheus of the solo mining space. None of this would exist without his foundational work.</p>
-      </details>
-
-      <details class="faq-item">
-        <summary>Are you part of the OSMU community?</summary>
-        <p><a href="https://osmu.wiki" target="_blank" rel="noopener">OSMU</a> (Open Source Miners United) is a community of people passionate about Bitcoin and open-source mining, built around the belief that knowledge should be shared openly. I was an active member in the early days — it shaped a lot of how I think about mining. Life got busy; learning a new language, preparing to migrate for a better life kept my calendar full, and I gradually became more of a read-only member. But the spirit of that community is very much part of why bch.ee Parasite Pool exists.</p>
-        <p>Honestly, one of the things I feel most held back by is something I had no say in — the passport I was born with. I didn't choose my country any more than anyone chooses where they're born. But the consequences are real: no visa to the US, no free movement in the Schengen area, no Bitcoin conferences in Europe or the UK. If I had been born a US, UK, or German citizen, I have no doubt things would have looked very different — I would have shown up, contributed in person, and been far more active. Until I naturalise somewhere that opens those doors, staying on the sidelines is simply the reality.</p>
-        <p>To make matters more absurd — even importing a $10 Bitaxe accessory is either outright forbidden or burdened with such substantial import taxes and fees that it becomes economically pointless. The hardware that the rest of the world tinkers with freely is effectively out of reach. Until my circumstances change, I'll be channelling my energy into my own products for fun, and my career to survive — and staying out of it.</p>
-        <p>Long story short, I really would like to be an active member, but until then I will be a read-only member and a silent fan.</p>
-        <p>I especially want to thank <a href="https://x.com/skot9000" target="_blank" rel="noopener">@skot9000</a>, <a href="https://x.com/wantclue" target="_blank" rel="noopener">@wantclue</a>, <a href="https://www.rgzen.com/index.php" target="_blank" rel="noopener">RGZ Electronics</a>, and <a href="https://www.thesolomining.co/" target="_blank" rel="noopener">The Solo Mining Co.</a> for their kind early help to me and everything they created in this space.</p>
       </details>
 
       <details class="faq-item">
@@ -251,7 +232,7 @@
         "name": "How do payouts work?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Every time a block is found, three things happen: 1 BCH is paid to the miner who found the block, directly in the block's coinbase; 99% of (Block Reward + Tx Fees \u2212 1 BCH) is split proportionally (PROP) among all miners based on their shares submitted since the last block \u2014 no minimum, even 1 sat is paid; 1% goes to the pool fee. The block finder receives both: the 1 BCH bonus, plus their own proportional share of the 99% like every other miner \u2014 all paid in that same coinbase transaction. It's fully trustless \u2014 no pool-side ledger to trust, and no ongoing bookkeeping."
+          "text": "Every time a block is found, three things happen: 2% of the full block reward (Block Reward + Tx Fees) is taken first, as the pool fee; 1 BCH is paid to the miner who found the block, directly in the block's coinbase, from what's left after the fee; the remaining balance is split proportionally (PROP) among all miners based on their shares submitted since the last block \u2014 no minimum, even 1 sat is paid. The block finder receives both the 1 BCH bonus, plus their own proportional share of the remaining balance like every other miner \u2014 all paid in that same coinbase transaction. It's fully trustless \u2014 no pool-side ledger to trust, and no ongoing bookkeeping."
         }
       },
       {
@@ -267,7 +248,7 @@
         "name": "What is the pool fee?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "The effective fee is approximately ~0.7% of the full block reward. The 1 BCH finder bonus is paid completely fee-free. The 1% fee applies only to the remaining distributable reward \u2014 so on a 3.125 BCH block, the fee is taken from 2.125 BCH, not the full amount."
+          "text": "The pool fee is 2% of the full block reward, taken first \u2014 before the 1 BCH finder bonus and miner payouts are calculated. So on a 3.125 BCH block, the fee is 0.0625 BCH."
         }
       },
       {
@@ -316,14 +297,6 @@
         "acceptedAnswer": {
           "@type": "Answer",
           "text": "The pool server runs in Frankfurt, Germany. Invoicing and domain purchases are handled through Estonia, thanks to the Estonian e-Residency programme, which allows individuals to access EU digital services without being a resident. The operator lives somewhere else."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "What software is bch.ee Parasite Pool built on?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "It is built on asicseer-pool, with the necessary modifications made for our setup. Asicseer-pool itself is based on the industry-standard ckpool by Con Kolivas. While on the subject \u2014 a sincere thank you to Con Kolivas, the Prometheus of the solo mining space. None of this would exist without his foundational work."
         }
       },
       {
