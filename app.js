@@ -1221,7 +1221,7 @@ async function loadBestShares() {
       return `<tr>
         <td>${rank}</td>
         <td><code class="bs-address" data-address="${escapeHtml(r.address)}">${escapeHtml(r.address)}</code></td>
-        <td>${icon} ${escapeHtml(parseHashrateStr(r.hashrate1m))}</td>
+        <td>${idle ? icon : `${icon} ${escapeHtml(parseHashrateStr(r.hashrate1m))}`}</td>
         <td class="col-bs">${bsCell}</td>
         <td class="col-bs">${pctRaw}${pctTip}</td>
         <td class="col-payout">${payoutStr}${payoutUsd}</td>
