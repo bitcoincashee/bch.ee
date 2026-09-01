@@ -1278,17 +1278,35 @@ async function loadBestShares() {
       });
 
       let rank = 1;
-      let html = '';
-      html += sortedLoaded.map(r => renderRow(r, rank++, top3, false)).join('');
-      html += pending.map(a => renderPendingRow(a, rank++)).join('');
+      const rows = [];
+      sortedLoaded.forEach(r => rows.push(renderRow(r, rank++, top3, false)));
+      pending.forEach(a => rows.push(renderPendingRow(a, rank++)));
 
       if (postponedAddresses.length > 0) {
-        html += renderCutoffRow();
-        html += sortedPostponedLoaded.map(r => renderRow(r, rank++, top3, true)).join('');
-        html += postponedPending.map(a => renderPendingRow(a, rank++)).join('');
+        rows.push(renderCutoffRow());
+        sortedPostponedLoaded.forEach(r => rows.push(renderRow(r, rank++, top3, true)));
+        postponedPending.forEach(a => rows.push(renderPendingRow(a, rank++)));
       }
 
-      table.querySelector('tbody').innerHTML = html;
+      // Patched in place, row by row, rather than replacing the whole tbody:
+      // this is re-run every time a single address's fetch resolves (rows
+      // stream in one at a time), and a full innerHTML reset would recreate
+      // every <tr> — including already-loaded ones whose content hasn't
+      // changed — restarting the pickaxe icon's CSS animation on all of
+      // them each time. Only rows whose rendered HTML actually differs get
+      // touched, so unaffected rows keep their DOM node and their animation
+      // keeps running uninterrupted.
+      const tbody = table.querySelector('tbody');
+      const temp = document.createElement('tbody');
+      temp.innerHTML = rows.join('');
+      const newRows = [...temp.children];
+      const oldRows = [...tbody.children];
+      newRows.forEach((newRow, i) => {
+        const oldRow = oldRows[i];
+        if (!oldRow) tbody.appendChild(newRow);
+        else if (oldRow.outerHTML !== newRow.outerHTML) tbody.replaceChild(newRow, oldRow);
+      });
+      for (let i = newRows.length; i < oldRows.length; i++) oldRows[i].remove();
     }
 
     table.innerHTML = `
