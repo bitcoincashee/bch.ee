@@ -1487,21 +1487,20 @@ code.connect-value {
    size to their content and the table can grow past the card's width, so
    the wrapping div's overflow-x:auto scrolls horizontally only when it
    actually needs to — and shows no scrollbar at all when everything fits. */
-#bestshares-table tbody td:nth-child(2) {
+#bestshares-table tbody td:nth-child(2),
+#bestshares-table thead th:nth-child(2) {
   text-align: left;
 }
 
-/* Sized (and clamped) on the inner <code> rather than the <td> itself: a
-   table cell includes its own padding in a ch-based width (border-box),
-   which left less room for text than intended, and separately a table
-   cell's display:table-cell fights display:-webkit-box just enough to
-   let a sliver of a 4th line through the clamp. ~26ch fits a full address
-   in 2 lines on desktop; the mobile breakpoint below narrows that to
-   ~17ch (3 lines). table-layout:auto never shrinks a column below its
-   declared width on its own once scrolling is available — it just always
-   renders at that width and lets the table overflow — so getting an
-   actual 2-lines-wide/3-lines-narrow split needs this explicit breakpoint
-   rather than one fluid, auto-shrinking width. */
+/* No fixed width: .workers-table is width:100% under table-layout:auto, so
+   letting this cell wrap (instead of white-space:nowrap) lets the browser's
+   own column-sizing shrink the address down only as far as the other
+   columns' fixed-width content forces it to — wrapping onto up to 3 lines
+   is tried first, and the wrapping div's overflow-x:auto (see above) only
+   kicks in as a last resort once even that isn't enough room. The
+   max-height is a hard backstop: a table cell's display:table-cell can
+   fight display:-webkit-box just enough to let a sliver of a 4th line
+   through the clamp, which reads as the address being cut mid-character. */
 .bs-address {
   cursor: pointer;
   display: -webkit-box;
@@ -1511,7 +1510,8 @@ code.connect-value {
   overflow: hidden;
   white-space: normal;
   word-break: break-all;
-  width: 26ch;
+  max-height: 4.8em; /* 3 lines at the site's 1.6 line-height */
+  min-width: 17ch;
 }
 .bs-address:hover {
   color: var(--accent);
@@ -1788,8 +1788,6 @@ code.connect-value {
   .chart-wrap { height: 170px; }
 
   .footer-inner { flex-direction: column; align-items: center; }
-
-  .bs-address { width: 17ch; }
 
   .block-row {
     grid-template-columns: 1fr auto;
