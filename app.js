@@ -1191,14 +1191,15 @@ async function loadBestShares() {
 
     function renderRow(r, rank, top3, postponed) {
       const pct = (r.bestshare / networkDiff * 100);
-      const pctRaw = pct >= 0.001 ? pct.toFixed(3) + '%' : '&lt; 0.001%';
+      const pctRaw = pct >= 0.01 ? pct.toFixed(2) + '%' : '&lt; 0.01%';
       const pctTip = pct > 100
         ? ` <span class="info-tip" data-tip="This share was sent before the last target was lowered">i</span>`
         : '';
       const idle = !r.lastshare || (Date.now() / 1000 - r.lastshare) >= 300;
       const icon = idle ? '<span class="miner-idle-icon">💤</span>' : '<span class="miner-active-icon">⛏️</span>';
       const medal = bsMedals[top3.indexOf(r.address)];
-      const bsCell = medal ? medal + ' ' + formatDiffCompact(r.bestshare) : formatDiffCompact(r.bestshare);
+      const bsValue = `${formatDiffCompact(r.bestshare)} (${pctRaw})${pctTip}`;
+      const bsCell = medal ? medal + ' ' + bsValue : bsValue;
       let payoutStr = '—';
       let payoutUsd = '';
       if (!postponed) {
@@ -1223,7 +1224,6 @@ async function loadBestShares() {
         <td><code class="bs-address" data-address="${escapeHtml(r.address)}">${escapeHtml(r.address)}</code></td>
         <td>${idle ? icon : `${icon} ${escapeHtml(parseHashrateStr(r.hashrate1m))}`}</td>
         <td class="col-bs">${bsCell}</td>
-        <td class="col-bs">${pctRaw}${pctTip}</td>
         <td class="col-payout">${payoutStr}${payoutUsd}</td>
         <td class="col-payout">${r.userLns != null ? formatDiffCompact(r.userLns) : '—'}</td>
       </tr>`;
@@ -1235,14 +1235,13 @@ async function loadBestShares() {
         <td><code class="bs-address" data-address="${escapeHtml(addr)}">${escapeHtml(addr)}</code></td>
         <td class="bs-pending">—</td>
         <td class="col-bs bs-pending">—</td>
-        <td class="col-bs bs-pending">—</td>
         <td class="col-payout bs-pending">—</td>
         <td class="col-payout bs-pending">—</td>
       </tr>`;
     }
 
     function renderCutoffRow() {
-      return `<tr class="bs-cutoff-row"><td colspan="7"><div class="bs-cutoff-inner">
+      return `<tr class="bs-cutoff-row"><td colspan="6"><div class="bs-cutoff-inner">
         <span class="bs-cutoff-line"></span>
         Top 100 payout cutoff — payouts for addresses below will be postponed to next blocks
         <span class="bs-cutoff-line"></span>
@@ -1298,7 +1297,6 @@ async function loadBestShares() {
         <th>Address</th>
         <th data-sort="hashrate" data-label="Hashrate" class="sort-th">Hashrate</th>
         <th data-sort="bestshare" data-label="Best Share" class="sort-th col-bs">Best Share</th>
-        <th class="col-bs">% of Net Diff</th>
         <th data-sort="payout" data-label="Est. Payout" class="sort-th col-payout">Est. Payout</th>
         <th class="col-payout">Work Done</th>
       </tr></thead>
