@@ -1136,7 +1136,8 @@ async function loadBestShares() {
   bestSharesLoaded = true;
 
   const loading = document.getElementById('bestshares-loading');
-  const tableCard = document.getElementById('bestshares-table-card');
+  const content = document.getElementById('bestshares-content');
+  const totalTable = document.getElementById('bs-total-table');
   const table = document.getElementById('bestshares-table');
 
   try {
@@ -1147,6 +1148,27 @@ async function loadBestShares() {
     ]);
 
     if (!work) throw new Error('Failed to fetch pool.work');
+
+    // Coinbase breakdown — same three figures as the homepage payout card
+    // (total reward, finder bonus, pool fee), all read directly from
+    // pool.work rather than recomputed, plus the actual PROP payout total.
+    const bsFinderBonus = work.finder_bonus ?? 1;
+    const bsPoolFee = work.fee ?? 0;
+    const bsPropTotal = Object.values(work.payouts ?? {}).reduce((a, b) => a + b, 0);
+    const bsUsdCell = btc => {
+      const usd = formatUsd(btc);
+      return usd ? `<div class="bs-payout-usd">${usd}</div>` : '';
+    };
+    if (totalTable) {
+      totalTable.innerHTML = `
+        <thead><tr><th>Output</th><th>Amount</th></tr></thead>
+        <tbody>
+          <tr><td>Total Coinbase</td><td>${work.reward.toFixed(8)} BCH${bsUsdCell(work.reward)}</td></tr>
+          <tr><td>🏆 Finder Bonus</td><td>${bsFinderBonus.toFixed(8)} BCH${bsUsdCell(bsFinderBonus)}</td></tr>
+          <tr><td>Pool Fee</td><td>${bsPoolFee.toFixed(8)} BCH${bsUsdCell(bsPoolFee)}</td></tr>
+          <tr><td>PROP Distribution</td><td>${bsPropTotal.toFixed(8)} BCH${bsUsdCell(bsPropTotal)}</td></tr>
+        </tbody>`;
+    }
 
     const statusText = await statusResp.text();
 
@@ -1335,7 +1357,7 @@ async function loadBestShares() {
     });
 
     loading.classList.add('hidden');
-    tableCard.classList.remove('hidden');
+    content.classList.remove('hidden');
     renderBestSharesBody();
 
     // Fetch each user individually; update their row as data arrives. "Work

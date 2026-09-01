@@ -604,10 +604,22 @@
         <p class="hero-sub">Leaderboard of miners active this round. <strong>Best Share</strong> (with its % of network difficulty) shows how close each miner has come to solving a block — a share reaching 100% solves it. <strong>Est. Payout</strong> and <strong>Work Done</strong> reflect their total round contribution and expected earnings.</p>
       </div>
       <div id="bestshares-loading" class="card text-center">Loading...</div>
-      <div id="bestshares-table-card" class="card hidden" style="margin-top:1.5rem">
-        <div style="overflow-x:auto">
-          <table id="bestshares-table" class="workers-table"></table>
+      <div id="bestshares-content" class="hidden">
+
+        <div class="section-title" style="margin-top:0">Coinbase Breakdown</div>
+        <div class="card" style="margin-bottom:1.5rem">
+          <div style="overflow-x:auto">
+            <table id="bs-total-table" class="workers-table"></table>
+          </div>
         </div>
+
+        <div class="section-title">Best Shares</div>
+        <div class="card">
+          <div style="overflow-x:auto">
+            <table id="bestshares-table" class="workers-table"></table>
+          </div>
+        </div>
+
       </div>
     </section>
 
