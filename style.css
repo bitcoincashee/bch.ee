@@ -53,31 +53,10 @@ main.container {
 
 /* ── Header ── */
 
-.maintenance-banner {
-  background: #d1242f;
-  color: #fff;
-  text-align: center;
-  font-weight: 500;
-  font-size: .9rem;
-  padding: .5rem 1rem;
-  letter-spacing: .02em;
-}
-
-.maintenance-banner a {
-  color: #fff;
-  text-decoration: underline;
-}
-.maintenance-banner a:hover {
-  opacity: .8;
-}
-
-.site-topbar {
+.header {
   position: sticky;
   top: 0;
   z-index: 100;
-}
-
-.header {
   background: rgba(13, 17, 23, 0.85);
   backdrop-filter: var(--blur);
   -webkit-backdrop-filter: var(--blur);
@@ -1603,18 +1582,6 @@ code.connect-value {
 @keyframes miner-swing {
   0%, 100% { transform: rotate(-28deg); }
   50%       { transform: rotate(12deg); }
-}
-
-.bs-loading-icon {
-  display: inline-block;
-  font-size: 2rem;
-  transform-origin: 75% 75%;
-  animation: miner-swing .65s ease-in-out infinite;
-}
-
-.bs-loading-text {
-  margin-top: .5rem;
-  color: var(--muted);
 }
 
 /* ── Info tooltip ── */
