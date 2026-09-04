@@ -138,6 +138,15 @@ let pendingBlocksPage = null;
 // navigations whenever Home is shown again.
 let refreshPoolChartOnShow = () => {};
 
+// Reassigned once loadBestShares() sets up its render closure. bchPrice is
+// fetched via a separate, slower round-trip (pool.status, then a second hop
+// to api.solochance.org) than the Best Shares rows themselves — a direct
+// deep link to #bestshares can finish painting every row before that price
+// arrives, and since renderBestSharesBody() only reruns when a row's own
+// data changes, those USD sublines would otherwise never appear even after
+// bchPrice is set. Called from loadDailyLuck() once the price lands.
+let refreshBestSharesUsd = () => {};
+
 function showSection(id) {
   sections.forEach(s => s.classList.toggle('active', s.id === id));
   navBtns.forEach(b => b.classList.toggle('active', b.dataset.section === id));
@@ -359,6 +368,7 @@ async function loadDailyLuck(poolHps) {
         priceEl.classList.remove('skeleton');
       }
       renderPayoutBreakdown();
+      refreshBestSharesUsd();
     }
 
     if (d.networkHashrate != null) {
@@ -1358,6 +1368,7 @@ async function loadBestShares() {
 
     loading.classList.add('hidden');
     content.classList.remove('hidden');
+    refreshBestSharesUsd = renderBestSharesBody;
     renderBestSharesBody();
 
     // Fetch each user individually; update their row as data arrives. "Work
